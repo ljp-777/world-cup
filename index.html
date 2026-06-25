@@ -281,6 +281,7 @@
   .rank-2 .grank{background:#5a8a66;color:#081b10;}
   .gteam-row .gname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
   .gteam-meta{display:flex;align-items:center;gap:5px;min-width:0;}
+  .team-flag{width:18px;height:12px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.28);flex-shrink:0;vertical-align:-1px;margin-left:5px;}
   .gteam-row .gpts{
     min-width:0;
     text-align:center;
@@ -643,6 +644,7 @@ let points = {};
 let goalDiffs = {};
 let goalsFor = {};
 let games = {};
+let teamFlags = {};
 const GROUP_TOTAL_ROUNDS = 3;
 
 const TEAM_NAME_ZH = {
@@ -667,6 +669,16 @@ function normalizeTeamNameKey(name){
 function teamNameOf(team){
   const name = team.name_cn || team.name_zh || team.name_en || team.name || team.team_id || '未知球队';
   return TEAM_NAME_ZH[normalizeTeamNameKey(name)] || name;
+}
+
+function teamFlagOf(team){
+  return team.flag || team.flag_url || team.flagUrl || team.logo || team.image || '';
+}
+
+function teamFlagHtml(teamName){
+  const cleanName = String(teamName || '').replace(/\s*\(第3名\)$/, '');
+  const flag = teamFlags[cleanName];
+  return flag ? `<img src="${flag}" class="team-flag" alt="${teamName} flag">` : '';
 }
 
 function pointsOfTeam(team){
@@ -715,12 +727,17 @@ function applyGroupApiData(apiGroups){
   goalDiffs = {};
   goalsFor = {};
   games = {};
+  teamFlags = {};
 
   apiGroups.forEach(groupData => {
     const groupCode = groupData.group;
     const teams = groupData.teams || [];
 
-    groups[groupCode] = teams.map(teamNameOf);
+    groups[groupCode] = teams.map(team => {
+      const teamName = teamNameOf(team);
+      teamFlags[teamName] = teamFlagOf(team);
+      return teamName;
+    });
     points[groupCode] = teams.map(pointsOfTeam);
     goalDiffs[groupCode] = teams.map(goalDiffOfTeam);
     goalsFor[groupCode] = teams.map(goalsForOfTeam);
@@ -1016,6 +1033,7 @@ function renderGroupGrid(){
       </div>
     `;
     groups[g].forEach(team=>{
+      console.log(team);
       const row = document.createElement('div');
       const isFirst = groupPicks[g].first === team;
       const isSecond = groupPicks[g].second === team;
@@ -1027,7 +1045,7 @@ function renderGroupGrid(){
       const statusHtml = badge ? `<span class="status-tag ${badge.cls}">${badge.text}</span>` : '';
       row.innerHTML = `
         <span class="grank">${rank}</span>
-        <span class="gteam-meta"><span class="gname" title="${team}">${team}</span>${statusHtml}</span>
+        <span class="gteam-meta"><span class="gname" title="${team}">${team}${teamFlagHtml(team)}</span>${statusHtml}</span>
         <span class="gpts">${pts}</span>
         <span class="ggd">${gf}</span>
         <span class="rank-actions">
@@ -1079,7 +1097,7 @@ function renderThirdGrid(){
     div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'');
     div.innerHTML = `
       <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} data-g="${c.group}"/>
-      <span class="third-team" title="${c.group}组 ${c.team}">${c.group}组 · ${c.team}</span>
+      <span class="third-team" title="${c.group}组 ${c.team}">${c.group}组 · ${c.team}${teamFlagHtml(c.team)}</span>
       <span class="third-score">${c.pts}分 / 进${goalsForOf(c.group, c.team)}</span>
     `;
     div.querySelector('input').addEventListener('change', e=>{
@@ -1167,7 +1185,7 @@ function renderBracket(){
   const trophyBox = document.getElementById('trophyBox');
   if(champ){
     champDisplay.className = 'champion-name';
-    champDisplay.textContent = '🏆 ' + champ;
+    champDisplay.innerHTML = '🏆 ' + champ + teamFlagHtml(champ);
     trophyBox.classList.add('has-champion');
   } else {
     champDisplay.className = 'champion-placeholder';
@@ -1233,7 +1251,7 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
       const labelHtml = label ? `<span class="slot-label">${label}</span>` : '';
       const statusHtml = status ? `<span class="slot-status ${status.cls}">${status.text}</span>` : '';
       const hintHtml = isWinner ? '' : '<span class="click-hint">点这里晋级 ›</span>';
-      btn.innerHTML = `<span>${realName||'待定'}${labelHtml}${statusHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
+      btn.innerHTML = `<span>${realName||'待定'}${realName ? teamFlagHtml(realName) : ''}${labelHtml}${statusHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
       btn.addEventListener('click',()=>{
         if(!name) return;
         winners[matchId] = name;
