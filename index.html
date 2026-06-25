@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="2026 FIFA 世界杯夺冠预测器：设置小组名次、选择最佳第三名，并点击淘汰赛对阵预测冠军。">
 <title>2026世界杯 夺冠预测</title>
 <style>
   :root{
@@ -26,16 +27,16 @@
     background:
       radial-gradient(circle at 12% 8%, rgba(242,201,76,.24), transparent 28%),
       radial-gradient(circle at 86% 16%, rgba(86,214,255,.16), transparent 30%),
-      linear-gradient(135deg, #04110c 0%, var(--pitch) 42%, #03100a 100%);
-    background-image:
       linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
-      repeating-linear-gradient(90deg, rgba(11,61,36,.6) 0px, rgba(11,61,36,.6) 72px, rgba(15,81,50,.54) 72px, rgba(15,81,50,.54) 144px);
-    background-size:44px 44px,44px 44px,auto;
+      repeating-linear-gradient(90deg, rgba(11,61,36,.6) 0px, rgba(11,61,36,.6) 72px, rgba(15,81,50,.54) 72px, rgba(15,81,50,.54) 144px),
+      linear-gradient(135deg, #04110c 0%, var(--pitch) 42%, #03100a 100%);
+    background-size:auto,auto,44px 44px,44px 44px,auto,auto;
     color:var(--chalk);
     font-family:'Trebuchet MS','PingFang SC','Microsoft YaHei',sans-serif;
     padding:28px;
     overflow-x:hidden;
+    color-scheme:dark;
   }
   body::before{
     content:"";
@@ -104,6 +105,7 @@
   }
   .ghost-btn{background:rgba(255,255,255,.1);color:var(--chalk);border:1px solid rgba(255,255,255,.2);text-decoration:none;display:inline-flex;align-items:center;}
   .ghost-btn:hover,.settings-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.25);}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid rgba(86,214,255,.85);outline-offset:3px;}
   .toolbar{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 0 24px;}
   .steps-guide{
     display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 20px;
@@ -479,6 +481,10 @@
   .vs-mini{font-size:10px;color:#7fae8f;text-align:center;margin:-6px 0 6px;}
   ::-webkit-scrollbar{height:8px;}
   ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px;}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+  }
   @media (max-width:900px){
     body{padding:16px;}
     body::before{display:none;}
@@ -552,11 +558,11 @@
   <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
 </div>
 
-<div id="modalOverlay" class="modal-overlay" style="display:none;">
+<div id="modalOverlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
   <div class="modal-box">
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" onclick="closeModal()" aria-label="关闭设置弹窗">✕</button>
     <div class="stage">
-      <h2>第一步：选择各小组的1/2名 <span class="hint" id="groupHint">默认按当前积分榜排名，可自行修改</span></h2>
+      <h2 id="settingsTitle">第一步：选择各小组的1/2名 <span class="hint" id="groupHint">默认按当前积分榜排名，可自行修改</span></h2>
       <div class="group-grid" id="groupGrid"></div>
     </div>
 
@@ -600,13 +606,13 @@ const groups = {
 // 当前积分：按 groups[g] 中球队顺序一一对应。
 // 后续第三场结束后，只需要更新这里的分数；配置页积分展示、默认第三名排序会自动同步。
 const points = {
-  A:[6,3,1,1], B:[4,7,4,1], C:[7,7,3,0], D:[6,3,3,0],
+  A:[9,3,1,4], B:[4,7,4,1], C:[7,7,3,0], D:[6,3,3,0],
   E:[6,3,1,1], F:[4,4,3,0], G:[4,2,2,1], H:[4,2,2,1],
   I:[6,6,0,0], J:[6,3,3,0], K:[6,4,1,0], L:[4,4,3,0]
 };
 // 每队已踢场次（胜+平+负），与 groups[g] 顺序一一对应。每组小组赛共3轮。
 const games = {
-  A:[2,2,2,2], B:[3,3,3,3], C:[3,3,3,3], D:[2,2,2,2],
+  A:[3,3,3,3], B:[3,3,3,3], C:[3,3,3,3], D:[2,2,2,2],
   E:[2,2,2,2], F:[2,2,2,2], G:[2,2,2,2], H:[2,2,2,2],
   I:[2,2,2,2], J:[2,2,2,2], K:[2,2,2,2], L:[2,2,2,2]
 };
@@ -785,7 +791,9 @@ function slotTeamName(slot){
 
 /* ---------- 渲染 ---------- */
 function openModal(){
-  document.getElementById('modalOverlay').style.display = 'flex';
+  const overlay = document.getElementById('modalOverlay');
+  overlay.style.display = 'flex';
+  overlay.querySelector('.modal-close').focus();
 }
 function closeModal(){
   document.getElementById('modalOverlay').style.display = 'none';
@@ -1122,6 +1130,13 @@ function resetAll(){
   renderThirdGrid();
   recomputeAndRender();
 }
+
+document.getElementById('modalOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'modalOverlay') closeModal();
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && document.getElementById('modalOverlay').style.display === 'flex') closeModal();
+});
 
 /* init */
 renderGroupGrid();
