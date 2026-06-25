@@ -567,7 +567,7 @@ const groups = {
 // 当前积分：按 groups[g] 中球队顺序一一对应。
 // 后续第三场结束后，只需要更新这里的分数；配置页积分展示、默认第三名排序会自动同步。
 const points = {
-  A:[6,3,1,1], B:[4,4,1,1], C:[4,4,3,0], D:[6,3,3,0],
+  A:[6,3,1,1], B:[4,7,4,1], C:[7,7,3,0], D:[6,3,3,0],
   E:[6,3,1,1], F:[4,4,3,0], G:[4,2,2,1], H:[4,2,2,1],
   I:[6,6,0,0], J:[6,3,3,0], K:[6,4,1,0], L:[4,4,3,0]
 };
@@ -579,7 +579,8 @@ function ptsOf(g, team){
 /* ---------- 小组1/2名状态（默认=当前排名，可由用户修改） ---------- */
 let groupPicks = {}; // g -> {first:teamName, second:teamName}
 Object.keys(groups).forEach(g=>{
-  groupPicks[g] = { first: groups[g][0], second: groups[g][1] };
+  const sorted = [...groups[g]].sort((a,b)=> ptsOf(g,b)-ptsOf(g,a));
+  groupPicks[g] = { first: sorted[0], second: sorted[1] };
 });
 
 function first(g){ return groupPicks[g].first; }
@@ -992,7 +993,8 @@ function updateProgress(){
 function resetAll(){
   winners = {};
   Object.keys(groups).forEach(g=>{
-    groupPicks[g] = { first: groups[g][0], second: groups[g][1] };
+    const sorted = [...groups[g]].sort((a,b)=> ptsOf(g,b)-ptsOf(g,a));
+    groupPicks[g] = { first: sorted[0], second: sorted[1] };
   });
   selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
   renderGroupGrid();
