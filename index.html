@@ -231,40 +231,86 @@
 
   .group-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-    gap:10px;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:12px;
   }
   .group-card{
-    background:#163c26;
-    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(22,60,38,.98), rgba(10,38,26,.98));
+    border:1px solid rgba(242,201,76,.22);
     border-radius:14px;
-    padding:8px 10px;
+    padding:10px;
+    box-shadow:0 8px 22px rgba(0,0,0,.18);
   }
   .group-card .gtitle{
-    font-size:12px;
+    font-size:13px;
     color:var(--gold);
     letter-spacing:1px;
-    margin-bottom:6px;
+    margin-bottom:8px;
     font-weight:bold;
   }
-  .gteam-row{
-    display:flex;
+  .group-table{display:flex;flex-direction:column;gap:4px;}
+  .group-head,.gteam-row{
+    display:grid;
+    grid-template-columns:28px minmax(0,1fr) 46px 52px 92px;
     align-items:center;
     gap:6px;
-    padding:3px 0;
-    font-size:12px;
-    flex-wrap:wrap;
   }
-  .gteam-row .gname{flex:1;}
+  .group-head{
+    padding:0 6px 4px;
+    color:#9fc7ad;
+    font-size:10px;
+    letter-spacing:.5px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .gteam-row{
+    padding:6px;
+    font-size:12px;
+    border-radius:9px;
+    background:rgba(255,255,255,.035);
+    border:1px solid transparent;
+  }
+  .gteam-row.rank-1{border-color:rgba(242,201,76,.38);background:rgba(242,201,76,.1);}
+  .gteam-row.rank-2{border-color:rgba(90,138,102,.45);background:rgba(90,138,102,.12);}
+  .gteam-row.rank-4{opacity:.72;}
+  .grank{
+    width:24px;height:24px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.08);color:#d5eadc;font-weight:bold;font-size:11px;
+  }
+  .rank-1 .grank{background:var(--gold);color:#23260a;}
+  .rank-2 .grank{background:#5a8a66;color:#081b10;}
+  .gteam-row .gname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
+  .gteam-meta{display:flex;align-items:center;gap:5px;min-width:0;}
   .gteam-row .gpts{
-    min-width:34px;
+    min-width:0;
     text-align:center;
     color:#ffe28a;
-    font-size:11px;
+    font-size:12px;
+    font-weight:bold;
     background:rgba(242,201,76,.12);
     border:1px solid rgba(242,201,76,.28);
     border-radius:999px;
-    padding:2px 6px;
+    padding:3px 6px;
+  }
+  .gteam-row .ggd{
+    min-width:0;
+    text-align:center;
+    color:#56d6ff;
+    font-size:11px;
+    background:rgba(86,214,255,.1);
+    border:1px solid rgba(86,214,255,.28);
+    border-radius:999px;
+    padding:3px 6px;
+  }
+  .rank-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .rank-actions .rank-btn{min-width:42px;}
+  .status-tag{
+    font-size:9px;
+    padding:2px 5px;
+    border-radius:999px;
+    font-weight:bold;
+    letter-spacing:0.5px;
+    flex-shrink:0;
   }
   .rank-btn{
     border:1px solid var(--line);
@@ -292,30 +338,23 @@
     font-size:10px;
     font-weight:normal;
   }
-  .status-tag{
-    font-size:9px;
-    padding:2px 6px;
-    border-radius:999px;
-    font-weight:bold;
-    letter-spacing:0.5px;
-    flex-shrink:0;
-  }
   .status-tag.qual{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
   .status-tag.elim{background:rgba(216,68,58,.22);color:#ff8a80;border:1px solid rgba(216,68,58,.5);}
 
   .third-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-    gap:8px;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:10px;
   }
   .third-pick{
-    display:flex;
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
     align-items:center;
-    gap:6px;
-    background:#163c26;
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:6px 8px;
+    gap:8px;
+    background:rgba(22,60,38,.9);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;
+    padding:9px 10px;
     font-size:13px;
     cursor:pointer;
   }
@@ -324,6 +363,8 @@
     background:#2a4a30;
   }
   .third-pick input{accent-color:var(--gold);}
+  .third-team{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
+  .third-score{color:#9fc7ad;font-size:12px;white-space:nowrap;}
   .third-count{font-size:12px;}
   .third-count.bad{color:#ff8a80;}
   .third-count.good{color:#9fe6a0;}
@@ -505,7 +546,10 @@
     .step-num{width:22px;height:22px;font-size:11px;}
     .step-arrow{font-size:14px;}
     .stage{padding:12px 10px;border-radius:12px;}
-    .group-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;}
+    .group-grid{grid-template-columns:1fr;gap:8px;}
+    .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 40px 46px 82px;gap:4px;}
+    .rank-actions .rank-btn{min-width:38px;padding:3px 5px;}
+    .third-grid{grid-template-columns:1fr;}
     .round-row{gap:6px;padding-bottom:6px;}
     .round-col{min-width:150px;gap:8px;}
     .round-col.r32-col{min-width:160px;}
@@ -610,6 +654,13 @@ const points = {
   E:[6,3,1,1], F:[4,4,3,0], G:[4,2,2,1], H:[4,2,2,1],
   I:[6,6,0,0], J:[6,3,3,0], K:[6,4,1,0], L:[4,4,3,0]
 };
+// 当前净胜球：按 groups[g] 中球队顺序一一对应。
+// 如后续更新赛果，只需要调整这里；同分时默认排名与最佳第三名排序会优先参考净胜球。
+const goalDiffs = {
+  A:[6,2,2,2], B:[8,7,5,2], C:[7,6,1,2], D:[6,2,2,0],
+  E:[9,2,0,1], F:[7,6,6,1], G:[4,2,1,3], H:[4,3,2,1],
+  I:[6,7,3,1], J:[5,3,2,2], K:[4,6,1,1], L:[4,1,3,0]
+};
 // 每队已踢场次（胜+平+负），与 groups[g] 顺序一一对应。每组小组赛共3轮。
 const games = {
   A:[3,3,3,3], B:[3,3,3,3], C:[3,3,3,3], D:[2,2,2,2],
@@ -620,6 +671,16 @@ const GROUP_TOTAL_ROUNDS = 3;
 function ptsOf(g, team){
   const idx = groups[g].indexOf(team);
   return points[g][idx];
+}
+function goalDiffOf(g, team){
+  const idx = groups[g].indexOf(team);
+  return goalDiffs[g][idx];
+}
+function formatGoalDiff(n){
+  return n > 0 ? `+${n}` : `${n}`;
+}
+function compareTeamsInGroup(g, a, b){
+  return ptsOf(g,b)-ptsOf(g,a) || goalDiffOf(g,b)-goalDiffOf(g,a);
 }
 function gamesOf(g, team){
   const idx = groups[g].indexOf(team);
@@ -641,7 +702,7 @@ function overallGroupProgress(){
   });
   return { played, total };
 }
-/* 数学晋级判定（基于当前积分与各组剩余场次，未考虑净胜球，仅供参考） */
+/* 数学晋级判定（基于当前积分与各组剩余场次，未考虑净胜球，仅供最佳第三名候选过滤） */
 function remainingRounds(g, team){
   return GROUP_TOTAL_ROUNDS - gamesOf(g, team);
 }
@@ -666,7 +727,7 @@ function clinchStatus(g, team){
 /* ---------- 小组1/2名状态（默认=当前排名，可由用户修改） ---------- */
 let groupPicks = {}; // g -> {first:teamName, second:teamName}
 Object.keys(groups).forEach(g=>{
-  const sorted = [...groups[g]].sort((a,b)=> ptsOf(g,b)-ptsOf(g,a));
+  const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
   groupPicks[g] = { first: sorted[0], second: sorted[1] };
 });
 
@@ -674,18 +735,25 @@ function first(g){ return groupPicks[g].first; }
 function second(g){ return groupPicks[g].second; }
 function thirdFourth(g){
   const remain = groups[g].filter(t => t!==groupPicks[g].first && t!==groupPicks[g].second);
-  remain.sort((a,b)=> ptsOf(g,b)-ptsOf(g,a));
+  remain.sort((a,b)=> compareTeamsInGroup(g,a,b));
   return { third: remain[0], fourth: remain[1] };
 }
 function third(g){ return thirdFourth(g).third; }
+function groupRank(g, team){
+  if(groupPicks[g].first === team) return 1;
+  if(groupPicks[g].second === team) return 2;
+  const rest = thirdFourth(g);
+  if(rest.third === team) return 3;
+  return 4;
+}
 
 /* ---------- 8个最佳第三名（动态计算，随小组1/2名选择变化） ---------- */
 function getThirdCandidates(){
   return Object.keys(groups).map(g=>{
     const t = third(g);
-    return { group:g, team:t, pts:ptsOf(g,t) };
+    return { group:g, team:t, pts:ptsOf(g,t), gd:goalDiffOf(g,t) };
   }).filter(c=>clinchStatus(c.group, c.team)!=='eliminated')
-    .sort((a,b)=>b.pts-a.pts);
+    .sort((a,b)=>b.pts-a.pts || b.gd-a.gd);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
 
@@ -822,21 +890,32 @@ function renderGroupGrid(){
     const playedLabel = played>=total ? `已赛完 ${played}/${total}` : `已赛 ${played}/${total}`;
     title.innerHTML = `<span>${g}组</span><span class="gplayed">${playedLabel}</span>`;
     card.appendChild(title);
+    const table = document.createElement('div');
+    table.className = 'group-table';
+    table.innerHTML = `
+      <div class="group-head">
+        <span>名</span><span>球队</span><span>积分</span><span>净胜</span><span>调整</span>
+      </div>
+    `;
     groups[g].forEach(team=>{
       const row = document.createElement('div');
-      row.className = 'gteam-row';
       const isFirst = groupPicks[g].first === team;
       const isSecond = groupPicks[g].second === team;
       const pts = ptsOf(g, team);
-      const status = clinchStatus(g, team);
-      const statusHtml = status==='qualified' ? '<span class="status-tag qual">✅晋级</span>'
-        : status==='eliminated' ? '<span class="status-tag elim">❌出局</span>' : '';
+      const gd = goalDiffOf(g, team);
+      const rank = groupRank(g, team);
+      row.className = `gteam-row rank-${rank}`;
+      const statusHtml = rank <= 2 ? '<span class="status-tag qual">✅晋级</span>'
+        : rank === 4 ? '<span class="status-tag elim">❌淘汰</span>' : '';
       row.innerHTML = `
-        <span class="gname">${team}</span>
-        ${statusHtml}
-        <span class="gpts">${pts}分</span>
-        <button class="rank-btn ${isFirst?'active-first':''}" data-role="first">第1</button>
-        <button class="rank-btn ${isSecond?'active-second':''}" data-role="second">第2</button>
+        <span class="grank">${rank}</span>
+        <span class="gteam-meta"><span class="gname" title="${team}">${team}</span>${statusHtml}</span>
+        <span class="gpts">${pts}</span>
+        <span class="ggd">${formatGoalDiff(gd)}</span>
+        <span class="rank-actions">
+          <button class="rank-btn ${isFirst?'active-first':''}" data-role="first">第1</button>
+          <button class="rank-btn ${isSecond?'active-second':''}" data-role="second">第2</button>
+        </span>
       `;
       row.querySelector('[data-role="first"]').addEventListener('click', ()=>{
         if(groupPicks[g].second === team) groupPicks[g].second = groups[g].find(t=>t!==team && t!==groupPicks[g].first);
@@ -848,8 +927,9 @@ function renderGroupGrid(){
         groupPicks[g].second = team;
         onGroupPicksChanged();
       });
-      card.appendChild(row);
+      table.appendChild(row);
     });
+    card.appendChild(table);
     grid.appendChild(card);
   });
   updateGroupProgressLabel();
@@ -879,7 +959,11 @@ function renderThirdGrid(){
   thirdCandidates.forEach(c=>{
     const div = document.createElement('label');
     div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'');
-    div.innerHTML = `<input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} data-g="${c.group}"/> ${c.group}组 ${c.team} <span style="margin-left:auto;color:#9fc7ad">${c.pts}分</span>`;
+    div.innerHTML = `
+      <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} data-g="${c.group}"/>
+      <span class="third-team" title="${c.group}组 ${c.team}">${c.group}组 · ${c.team}</span>
+      <span class="third-score">${c.pts}分 / 净${formatGoalDiff(c.gd)}</span>
+    `;
     div.querySelector('input').addEventListener('change', e=>{
       if(e.target.checked) selectedThirds.add(c.group);
       else selectedThirds.delete(c.group);
@@ -1122,7 +1206,7 @@ function updateProgress(){
 function resetAll(){
   winners = {};
   Object.keys(groups).forEach(g=>{
-    const sorted = [...groups[g]].sort((a,b)=> ptsOf(g,b)-ptsOf(g,a));
+    const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
     groupPicks[g] = { first: sorted[0], second: sorted[1] };
   });
   selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
