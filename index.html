@@ -339,6 +339,7 @@
     font-weight:normal;
   }
   .status-tag.qual,.status-tag.locked{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
+  .status-tag.clinched{background:rgba(242,201,76,.18);color:#ffe28a;border:1px solid rgba(242,201,76,.48);}
   .status-tag.pred{background:rgba(86,214,255,.16);color:#8ee2ff;border:1px solid rgba(86,214,255,.45);}
   .status-tag.elim{background:rgba(216,68,58,.22);color:#ff8a80;border:1px solid rgba(216,68,58,.5);}
 
@@ -470,6 +471,7 @@
   .team-btn .slot-label{font-size:11px;color:rgba(242,201,76,.7);margin-left:6px;font-weight:normal;}
   .team-btn .slot-status{font-size:9px;border-radius:999px;padding:2px 5px;margin-left:6px;font-weight:bold;white-space:nowrap;}
   .team-btn .slot-status.locked{background:rgba(90,206,120,.2);color:#7fe6a0;border:1px solid rgba(90,206,120,.45);}
+  .team-btn .slot-status.clinched{background:rgba(242,201,76,.16);color:#ffe28a;border:1px solid rgba(242,201,76,.45);}
   .team-btn .slot-status.pred{background:rgba(86,214,255,.14);color:#8ee2ff;border:1px solid rgba(86,214,255,.4);}
   .team-btn.winner .slot-label{color:rgba(35,38,10,.6);}
   .team-btn.winner .slot-status{display:none;}
@@ -757,7 +759,7 @@ function qualificationBadge(g, team, rank){
     // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
     const groupDone = groupPlayedCount(g) >= groupTotalCount();
     if(groupDone) return { cls:'locked', text:'确定' };
-    if(ptsOf(g, team) >= 6) return { cls:'locked', text:'已晋级' };
+    if(ptsOf(g, team) >= 6) return { cls:'clinched', text:'已晋级' };
     return { cls:'pred', text:'预测' };
   }
   if(rank === 4 && groupPlayedCount(g) >= groupTotalCount()){
