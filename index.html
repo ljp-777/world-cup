@@ -387,6 +387,7 @@
     justify-content:space-around;
   }
   .round-col.r32-col{min-width:215px;}
+  .round-col.lifted-col{transform:translateY(-12px);}
   .center-col{
     min-width:230px;
     display:flex;
@@ -754,10 +755,10 @@ function groupRank(g, team){
 function qualificationBadge(g, team, rank){
   if(rank <= 2){
     // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
-    const locked = ptsOf(g, team) >= 6 || groupPlayedCount(g) >= groupTotalCount();
-    return locked
-      ? { cls:'locked', text:'确定晋级' }
-      : { cls:'pred', text:'预测晋级' };
+    const groupDone = groupPlayedCount(g) >= groupTotalCount();
+    if(groupDone) return { cls:'locked', text:'确定' };
+    if(ptsOf(g, team) >= 6) return { cls:'locked', text:'已晋级' };
+    return { cls:'pred', text:'预测' };
   }
   if(rank === 4 && groupPlayedCount(g) >= groupTotalCount()){
     return { cls:'elim', text:'淘汰' };
@@ -1083,7 +1084,8 @@ function renderBracket(){
 
 function makeCol(title, matchEls, isR32){
   const col = document.createElement('div');
-  col.className = 'round-col' + (isR32 ? ' r32-col' : '');
+  const shouldLift = title === '1/8决赛' || title === '1/4决赛';
+  col.className = 'round-col' + (isR32 ? ' r32-col' : '') + (shouldLift ? ' lifted-col' : '');
   const t = document.createElement('div');
   t.className='round-title';
   t.textContent = title;
@@ -1109,8 +1111,8 @@ function slotStatus(slot){
     const progress = overallGroupProgress();
     const locked = progress.played >= progress.total;
     return locked
-      ? { cls:'locked', text:'确定晋级' }
-      : { cls:'pred', text:'预测晋级' };
+      ? { cls:'locked', text:'确定' }
+      : { cls:'pred', text:'预测' };
   }
   return null;
 }
