@@ -233,6 +233,7 @@
     gap:6px;
     padding:3px 0;
     font-size:12px;
+    flex-wrap:wrap;
   }
   .gteam-row .gname{flex:1;}
   .gteam-row .gpts{
@@ -266,6 +267,21 @@
     font-size:10px;
     font-weight:normal;
   }
+  .group-card .gplayed{
+    color:#9fc7ad;
+    font-size:10px;
+    font-weight:normal;
+  }
+  .status-tag{
+    font-size:9px;
+    padding:2px 6px;
+    border-radius:999px;
+    font-weight:bold;
+    letter-spacing:0.5px;
+    flex-shrink:0;
+  }
+  .status-tag.qual{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
+  .status-tag.elim{background:rgba(216,68,58,.22);color:#ff8a80;border:1px solid rgba(216,68,58,.5);}
 
   .third-grid{
     display:grid;
@@ -515,6 +531,7 @@
 </div>
 
 <div class="progress-bar-wrap">
+  <div class="progress-label" id="groupProgressLabel">小组赛进行中：— / — 场</div>
   <div class="progress-label" id="progressLabel">淘汰赛预测进度：0 / 31</div>
   <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
 </div>
@@ -571,9 +588,55 @@ const points = {
   E:[6,3,1,1], F:[4,4,3,0], G:[4,2,2,1], H:[4,2,2,1],
   I:[6,6,0,0], J:[6,3,3,0], K:[6,4,1,0], L:[4,4,3,0]
 };
+// 每队已踢场次（胜+平+负），与 groups[g] 顺序一一对应。每组小组赛共3轮。
+const games = {
+  A:[2,2,2,2], B:[3,3,3,3], C:[3,3,3,3], D:[2,2,2,2],
+  E:[2,2,2,2], F:[2,2,2,2], G:[2,2,2,2], H:[2,2,2,2],
+  I:[2,2,2,2], J:[2,2,2,2], K:[2,2,2,2], L:[2,2,2,2]
+};
+const GROUP_TOTAL_ROUNDS = 3;
 function ptsOf(g, team){
   const idx = groups[g].indexOf(team);
   return points[g][idx];
+}
+function gamesOf(g, team){
+  const idx = groups[g].indexOf(team);
+  return games[g][idx];
+}
+function groupPlayedCount(g){
+  // 每场比赛涉及2队，场次 = 各队已赛场次之和 / 2
+  return games[g].reduce((s,n)=>s+n,0) / 2;
+}
+function groupTotalCount(){
+  // 4队循环赛，共 C(4,2)=6 场
+  return 4*3/2;
+}
+function overallGroupProgress(){
+  let played = 0, total = 0;
+  Object.keys(groups).forEach(g=>{
+    played += groupPlayedCount(g);
+    total += groupTotalCount();
+  });
+  return { played, total };
+}
+/* 数学晋级判定（基于当前积分与各组剩余场次，未考虑净胜球，仅供参考） */
+function remainingRounds(g, team){
+  return GROUP_TOTAL_ROUNDS - gamesOf(g, team);
+}
+function clinchStatus(g, team){
+  const remain = remainingRounds(g, team);
+  const pts = ptsOf(g, team);
+  const xMin = pts; // 最差情况：剩余场次全负，积分不变
+  const others = groups[g].filter(t=>t!==team);
+  const exceedCount = others.filter(o=>{
+    const oMax = ptsOf(g,o) + 3*remainingRounds(g,o);
+    return oMax > xMin;
+  }).length;
+  if(exceedCount <= 1) return 'qualified'; // 最多1队能反超，必定锁定前2
+  const xMax = pts + 3*remain; // 最好情况：剩余场次全胜
+  const aheadCount = others.filter(o => ptsOf(g,o) > xMax).length;
+  if(aheadCount >= 2) return 'eliminated'; // 至少2队已锁定分数高于自己的理论最高分
+  return 'pending';
 }
 
 /* ---------- 小组1/2名状态（默认=当前排名，可由用户修改） ---------- */
@@ -727,7 +790,10 @@ function renderGroupGrid(){
     card.className = 'group-card';
     const title = document.createElement('div');
     title.className = 'gtitle';
-      title.innerHTML = `<span>${g}组</span><span class="pts-head">当前积分</span>`;
+    const played = groupPlayedCount(g);
+    const total = groupTotalCount();
+    const playedLabel = played>=total ? `已赛完 ${played}/${total}` : `已赛 ${played}/${total}`;
+    title.innerHTML = `<span>${g}组</span><span class="gplayed">${playedLabel}</span>`;
     card.appendChild(title);
     groups[g].forEach(team=>{
       const row = document.createElement('div');
@@ -735,8 +801,12 @@ function renderGroupGrid(){
       const isFirst = groupPicks[g].first === team;
       const isSecond = groupPicks[g].second === team;
       const pts = ptsOf(g, team);
+      const status = clinchStatus(g, team);
+      const statusHtml = status==='qualified' ? '<span class="status-tag qual">✅晋级</span>'
+        : status==='eliminated' ? '<span class="status-tag elim">❌出局</span>' : '';
       row.innerHTML = `
         <span class="gname">${team}</span>
+        ${statusHtml}
         <span class="gpts">${pts}分</span>
         <button class="rank-btn ${isFirst?'active-first':''}" data-role="first">第1</button>
         <button class="rank-btn ${isSecond?'active-second':''}" data-role="second">第2</button>
@@ -755,6 +825,17 @@ function renderGroupGrid(){
     });
     grid.appendChild(card);
   });
+  updateGroupProgressLabel();
+}
+function updateGroupProgressLabel(){
+  const { played, total } = overallGroupProgress();
+  const label = document.getElementById('groupProgressLabel');
+  if(label){
+    const done = played>=total;
+    label.textContent = done
+      ? `小组赛已全部结束：${played} / ${total} 场`
+      : `小组赛进行中：已赛 ${played} / ${total} 场`;
+  }
 }
 function onGroupPicksChanged(){
   // 小组名次变了，第三名候选池也变了：重新选出默认最佳8个第三名
