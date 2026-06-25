@@ -588,9 +588,6 @@
   </div>
 </section>
 
-<div class="toolbar">
-  <button class="settings-btn" onclick="openModal()">⚙ 设置小组名次与第三名晋级</button>
-</div>
 
 <div class="steps-guide" id="stepsGuide">
   <div class="step-item" id="step1"><span class="step-num">1</span>设置小组1/2名</div>
@@ -777,6 +774,43 @@ function getThirdCandidates(){
     .sort((a,b)=>b.pts-a.pts || b.gd-a.gd);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
+const SETTINGS_CACHE_KEY = 'worldCupGroupSettings';
+
+function loadSettingsCache(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_CACHE_KEY);
+    if(!raw) return;
+    const cache = JSON.parse(raw);
+    if(cache.groupPicks){
+      Object.keys(groups).forEach(g=>{
+        const pick = cache.groupPicks[g];
+        if(pick && groups[g].includes(pick.first) && groups[g].includes(pick.second) && pick.first !== pick.second){
+          groupPicks[g] = { first: pick.first, second: pick.second };
+        }
+      });
+    }
+    const validThirdGroups = new Set(getThirdCandidates().map(c=>c.group));
+    const cachedThirds = Array.isArray(cache.selectedThirds)
+      ? cache.selectedThirds.filter(g=>validThirdGroups.has(g))
+      : [];
+    if(cachedThirds.length === 8){
+      selectedThirds = new Set(cachedThirds);
+    } else {
+      selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
+    }
+  } catch(e){
+    localStorage.removeItem(SETTINGS_CACHE_KEY);
+  }
+}
+
+function saveSettingsCache(){
+  try{
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
+      groupPicks,
+      selectedThirds:[...selectedThirds]
+    }));
+  } catch(e){}
+}
 
 /* ---------- 1/16决赛对阵：分成4个象限（对应赛程图的左上/左下/右上/右下） ---------- */
 // 每象限4场，按 [m1,m2,m3,m4] 排列，m1+m2 -> 八分之一决赛A，m3+m4 -> 八分之一决赛B
@@ -895,6 +929,7 @@ function tryCloseModal(){
     return;
   }
   warn.textContent = '';
+  saveSettingsCache();
   closeModal();
 }
 
@@ -1244,6 +1279,7 @@ function updateProgress(){
 
 function resetAll(){
   winners = {};
+  localStorage.removeItem(SETTINGS_CACHE_KEY);
   Object.keys(groups).forEach(g=>{
     const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
     groupPicks[g] = { first: sorted[0], second: sorted[1] };
@@ -1262,6 +1298,7 @@ document.addEventListener('keydown', e=>{
 });
 
 /* init */
+loadSettingsCache();
 renderGroupGrid();
 renderThirdGrid();
 recomputeAndRender();
