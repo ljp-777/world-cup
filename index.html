@@ -251,7 +251,7 @@
   .group-table{display:flex;flex-direction:column;gap:4px;}
   .group-head,.gteam-row{
     display:grid;
-    grid-template-columns:28px minmax(0,1fr) 46px 52px 92px;
+    grid-template-columns:28px minmax(0,1fr) 28px 32px 32px 92px;
     align-items:center;
     gap:6px;
   }
@@ -288,20 +288,13 @@
     color:#ffe28a;
     font-size:12px;
     font-weight:bold;
-    background:rgba(242,201,76,.12);
-    border:1px solid rgba(242,201,76,.28);
-    border-radius:999px;
-    padding:3px 6px;
   }
   .gteam-row .ggd{
     min-width:0;
     text-align:center;
     color:#56d6ff;
     font-size:11px;
-    background:rgba(86,214,255,.1);
-    border:1px solid rgba(86,214,255,.28);
-    border-radius:999px;
-    padding:3px 6px;
+    font-weight:bold;
   }
   .rank-actions{display:flex;gap:4px;justify-content:flex-end;}
   .rank-actions .rank-btn{min-width:42px;}
@@ -556,7 +549,7 @@
     .step-arrow{font-size:14px;}
     .stage{padding:12px 10px;border-radius:12px;}
     .group-grid{grid-template-columns:1fr;gap:8px;}
-    .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 40px 46px 82px;gap:4px;}
+    .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px 82px;gap:4px;}
     .rank-actions .rank-btn{min-width:38px;padding:3px 5px;}
     .third-grid{grid-template-columns:1fr;}
     .round-row{gap:6px;padding-bottom:6px;}
@@ -1029,7 +1022,7 @@ function renderGroupGrid(){
     table.className = 'group-table';
     table.innerHTML = `
       <div class="group-head">
-        <span>名</span><span>球队</span><span>积分</span><span>进球</span><span>调整</span>
+        <span>名</span><span>球队</span><span>场次</span><span>积分</span><span>进球</span><span>调整</span>
       </div>
     `;
     groups[g].forEach(team=>{
@@ -1039,6 +1032,7 @@ function renderGroupGrid(){
       const isSecond = groupPicks[g].second === team;
       const pts = ptsOf(g, team);
       const gf = goalsForOf(g, team);
+      const played = gamesOf(g, team);
       const rank = groupRank(g, team);
       row.className = `gteam-row rank-${rank}`;
       const badge = qualificationBadge(g, team, rank);
@@ -1046,6 +1040,7 @@ function renderGroupGrid(){
       row.innerHTML = `
         <span class="grank">${rank}</span>
         <span class="gteam-meta"><span class="gname" title="${team}">${team}${teamFlagHtml(team)}</span>${statusHtml}</span>
+        <span class="gpts">${played}</span>
         <span class="gpts">${pts}</span>
         <span class="ggd">${gf}</span>
         <span class="rank-actions">
