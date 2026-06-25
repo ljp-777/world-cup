@@ -281,7 +281,7 @@
   .rank-2 .grank{background:#5a8a66;color:#081b10;}
   .gteam-row .gname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
   .gteam-meta{display:flex;align-items:center;gap:5px;min-width:0;}
-  .team-flag{width:18px;height:12px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.28);flex-shrink:0;vertical-align:-1px;margin-left:5px;}
+  .team-flag{display:inline-block;width:18px;height:12px;background-size:cover;background-position:center;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.28);flex-shrink:0;vertical-align:-1px;margin-left:5px;}
   .gteam-row .gpts{
     min-width:0;
     text-align:center;
@@ -315,6 +315,7 @@
     border-radius:4px;
     cursor:pointer;
   }
+  .rank-btn:disabled{cursor:not-allowed;opacity:.72;}
   .rank-btn.active-first{background:var(--gold);color:#23260a;border-color:var(--gold);font-weight:bold;}
   .rank-btn.active-second{background:#5a8a66;color:#0e2c1c;border-color:#5a8a66;font-weight:bold;}
   .group-card .gtitle{
@@ -328,9 +329,21 @@
     font-weight:normal;
   }
   .group-card .gplayed{
-    color:#9fc7ad;
     font-size:10px;
-    font-weight:normal;
+    font-weight:bold;
+    padding:2px 7px;
+    border-radius:999px;
+    letter-spacing:.5px;
+  }
+  .group-card .gplayed.done{
+    color:#ffe28a;
+    background:rgba(242,201,76,.18);
+    border:1px solid rgba(242,201,76,.48);
+  }
+  .group-card .gplayed.live{
+    color:#8ee2ff;
+    background:rgba(86,214,255,.14);
+    border:1px solid rgba(86,214,255,.4);
   }
   .status-tag.qual,.status-tag.locked{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
   .status-tag.clinched{background:rgba(242,201,76,.18);color:#ffe28a;border:1px solid rgba(242,201,76,.48);}
@@ -358,6 +371,7 @@
     border-color:var(--gold);
     background:#2a4a30;
   }
+  .third-pick.locked{cursor:default;opacity:.72;}
   .third-pick input{accent-color:var(--gold);}
   .third-team{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
   .third-score{color:#9fc7ad;font-size:12px;white-space:nowrap;}
@@ -638,6 +652,7 @@ let goalDiffs = {};
 let goalsFor = {};
 let games = {};
 let teamFlags = {};
+const flagPreloadCache = new Map();
 const GROUP_TOTAL_ROUNDS = 3;
 
 const TEAM_NAME_ZH = {
@@ -671,7 +686,16 @@ function teamFlagOf(team){
 function teamFlagHtml(teamName){
   const cleanName = String(teamName || '').replace(/\s*\(第3名\)$/, '');
   const flag = teamFlags[cleanName];
-  return flag ? `<img src="${flag}" class="team-flag" alt="${teamName} flag">` : '';
+  return flag ? `<span class="team-flag" role="img" aria-label="${teamName} flag" style="background-image:url('${flag}')"></span>` : '';
+}
+
+function preloadTeamFlags(){
+  Object.values(teamFlags).forEach(flag=>{
+    if(!flag || flagPreloadCache.has(flag)) return;
+    const img = new Image();
+    img.src = flag;
+    flagPreloadCache.set(flag, img);
+  });
 }
 
 function pointsOfTeam(team){
@@ -808,6 +832,18 @@ function initGroupPicks(){
   });
 }
 
+function isGroupDone(g){
+  return groupPlayedCount(g) >= groupTotalCount();
+}
+
+function lockCompletedGroupPicks(){
+  Object.keys(groups).forEach(g=>{
+    if(!isGroupDone(g)) return;
+    const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
+    groupPicks[g] = { first: sorted[0], second: sorted[1] };
+  });
+}
+
 function first(g){ return groupPicks[g].first; }
 function second(g){ return groupPicks[g].second; }
 function thirdFourth(g){
@@ -826,12 +862,12 @@ function groupRank(g, team){
 function qualificationBadge(g, team, rank){
   if(rank <= 2){
     // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
-    const groupDone = groupPlayedCount(g) >= groupTotalCount();
+    const groupDone = isGroupDone(g);
     if(groupDone) return { cls:'locked', text:'确定' };
     if(ptsOf(g, team) >= 6) return { cls:'clinched', text:'已晋级' };
     return { cls:'pred', text:'预测' };
   }
-  if(rank === 4 && groupPlayedCount(g) >= groupTotalCount()){
+  if(rank === 4 && isGroupDone(g)){
     return { cls:'elim', text:'淘汰' };
   }
   return null;
@@ -1006,6 +1042,7 @@ function tryCloseModal(){
 }
 
 function renderGroupGrid(){
+  lockCompletedGroupPicks();
   const grid = document.getElementById('groupGrid');
   grid.innerHTML = '';
   Object.keys(groups).forEach(g=>{
@@ -1015,8 +1052,9 @@ function renderGroupGrid(){
     title.className = 'gtitle';
     const played = groupPlayedCount(g);
     const total = groupTotalCount();
-    const playedLabel = played>=total ? `已赛完 ${played}/${total}` : `已赛 ${played}/${total}`;
-    title.innerHTML = `<span>${g}组</span><span class="gplayed">${playedLabel}</span>`;
+    const groupDone = isGroupDone(g);
+    const playedLabel = groupDone ? '已完赛' : '进行中';
+    title.innerHTML = `<span>${g}组</span><span class="gplayed ${groupDone?'done':'live'}">${playedLabel}</span>`;
     card.appendChild(title);
     const table = document.createElement('div');
     table.className = 'group-table';
@@ -1037,27 +1075,31 @@ function renderGroupGrid(){
       row.className = `gteam-row rank-${rank}`;
       const badge = qualificationBadge(g, team, rank);
       const statusHtml = badge ? `<span class="status-tag ${badge.cls}">${badge.text}</span>` : '';
+      const disabledAttr = groupDone ? 'disabled aria-disabled="true" title="已完赛，名次不可切换"' : '';
+      const actionsHtml = groupDone && rank > 2 ? '' : `
+          <button class="rank-btn ${isFirst?'active-first':''}" data-role="first" ${disabledAttr}>第1</button>
+          <button class="rank-btn ${isSecond?'active-second':''}" data-role="second" ${disabledAttr}>第2</button>
+        `;
       row.innerHTML = `
         <span class="grank">${rank}</span>
         <span class="gteam-meta"><span class="gname" title="${team}">${team}${teamFlagHtml(team)}</span>${statusHtml}</span>
         <span class="gpts">${played}</span>
         <span class="gpts">${pts}</span>
         <span class="ggd">${gf}</span>
-        <span class="rank-actions">
-          <button class="rank-btn ${isFirst?'active-first':''}" data-role="first">第1</button>
-          <button class="rank-btn ${isSecond?'active-second':''}" data-role="second">第2</button>
-        </span>
+        <span class="rank-actions">${actionsHtml}</span>
       `;
-      row.querySelector('[data-role="first"]').addEventListener('click', ()=>{
-        if(groupPicks[g].second === team) groupPicks[g].second = groups[g].find(t=>t!==team && t!==groupPicks[g].first);
-        groupPicks[g].first = team;
-        onGroupPicksChanged();
-      });
-      row.querySelector('[data-role="second"]').addEventListener('click', ()=>{
-        if(groupPicks[g].first === team) groupPicks[g].first = groups[g].find(t=>t!==team && t!==groupPicks[g].second);
-        groupPicks[g].second = team;
-        onGroupPicksChanged();
-      });
+      if(!groupDone){
+        row.querySelector('[data-role="first"]').addEventListener('click', ()=>{
+          if(groupPicks[g].second === team) groupPicks[g].second = groups[g].find(t=>t!==team && t!==groupPicks[g].first);
+          groupPicks[g].first = team;
+          onGroupPicksChanged();
+        });
+        row.querySelector('[data-role="second"]').addEventListener('click', ()=>{
+          if(groupPicks[g].first === team) groupPicks[g].first = groups[g].find(t=>t!==team && t!==groupPicks[g].second);
+          groupPicks[g].second = team;
+          onGroupPicksChanged();
+        });
+      }
       table.appendChild(row);
     });
     card.appendChild(table);
@@ -1089,15 +1131,17 @@ function renderThirdGrid(){
   const thirdCandidates = getThirdCandidates();
   thirdCandidates.forEach(c=>{
     const div = document.createElement('label');
-    div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'');
+    const groupDone = isGroupDone(c.group);
+    div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'')+(groupDone?' locked':'');
     div.innerHTML = `
-      <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} data-g="${c.group}"/>
+      <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} ${groupDone?'disabled':''} data-g="${c.group}"/>
       <span class="third-team" title="${c.group}组 ${c.team}">${c.group}组 · ${c.team}${teamFlagHtml(c.team)}</span>
       <span class="third-score">${c.pts}分 / 进${goalsForOf(c.group, c.team)}</span>
     `;
     div.querySelector('input').addEventListener('change', e=>{
       if(e.target.checked) selectedThirds.add(c.group);
       else selectedThirds.delete(c.group);
+      div.classList.toggle('checked', e.target.checked);
       onThirdsChanged();
     });
     grid.appendChild(div);
@@ -1116,7 +1160,7 @@ function updateThirdHint(){
   else if(warn && n !== 8) warn.textContent = `⚠ 请恰好选择8个最佳第三名（当前已选 ${n} 个）`;
 }
 function onThirdsChanged(){
-  renderThirdGrid();
+  updateThirdHint();
   recomputeAndRender();
 }
 
@@ -1249,6 +1293,7 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
       btn.innerHTML = `<span>${realName||'待定'}${realName ? teamFlagHtml(realName) : ''}${labelHtml}${statusHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
       btn.addEventListener('click',()=>{
         if(!name) return;
+        if(winners[matchId] === name) return;
         winners[matchId] = name;
         cascadeReset(matchId);
         recomputeAndRender();
@@ -1377,9 +1422,11 @@ async function init(){
   try{
     const apiGroups = await getGroups("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhM2NmMjA1ZmU1YWQxNjA0OGM2NDg5NSIsImlhdCI6MTc4MjM3OTAxNCwiZXhwIjoxNzg5NjM2NjE0fQ.rld-IK8HsTehqLRsA1yegiFO0Bx7-36i_MWA0vfSlII");
     applyGroupApiData(apiGroups);
+    preloadTeamFlags();
     initGroupPicks();
     selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
     loadSettingsCache();
+    lockCompletedGroupPicks();
     renderGroupGrid();
     renderThirdGrid();
     recomputeAndRender();
