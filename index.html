@@ -123,6 +123,24 @@
   }
   .step-item.done .step-num{background:#5a8a66;color:#fff;}
   .step-arrow{color:rgba(242,201,76,.4);font-size:18px;font-weight:bold;}
+  .next-action{
+    max-width:700px;margin:0 auto 18px;text-align:center;
+    background:rgba(242,201,76,.12);
+    border:1px solid rgba(242,201,76,.4);
+    border-radius:10px;
+    padding:10px 16px;
+    font-size:13px;
+    color:#ffe28a;
+    font-weight:bold;
+    letter-spacing:.5px;
+  }
+  .settings-btn.pulse{
+    animation:btnPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes btnPulse{
+    0%,100%{box-shadow:0 10px 30px rgba(242,201,76,.22);}
+    50%{box-shadow:0 10px 30px rgba(242,201,76,.6),0 0 0 6px rgba(242,201,76,.12);}
+  }
   .progress-bar-wrap{
     max-width:600px;margin:0 auto 20px;text-align:center;
   }
@@ -406,17 +424,13 @@
   .team-btn.winner .tag{color:#5a4d10;}
   .team-btn .slot-label{font-size:11px;color:rgba(242,201,76,.7);margin-left:6px;font-weight:normal;}
   .team-btn.winner .slot-label{color:rgba(35,38,10,.6);}
-  .team-btn:not(.empty):not(.winner):hover::after{
-    content:"点击晋级";
-    font-size:11px;
-    color:var(--gold);
-    margin-left:8px;
-    opacity:.8;
-  }
+  .team-btn .click-hint{font-size:10px;color:rgba(242,201,76,.65);margin-left:auto;padding-left:8px;flex-shrink:0;}
+  .team-btn.empty .click-hint,.team-btn.winner .click-hint{display:none;}
   .team-btn:not(.empty):not(.winner):hover{
     background:rgba(242,201,76,.12);
     border-color:rgba(242,201,76,.3);
   }
+  .team-btn:not(.empty):not(.winner):hover .click-hint{color:var(--gold);}
 
   .final-zone{
     max-width:600px;
@@ -530,6 +544,8 @@
   <div class="step-item" id="step4"><span class="step-num">4</span>得出冠军预测！</div>
 </div>
 
+<div class="next-action" id="nextAction"></div>
+
 <div class="progress-bar-wrap">
   <div class="progress-label" id="groupProgressLabel">小组赛进行中：— / — 场</div>
   <div class="progress-label" id="progressLabel">淘汰赛预测进度：0 / 31</div>
@@ -634,8 +650,10 @@ function clinchStatus(g, team){
   }).length;
   if(exceedCount <= 1) return 'qualified'; // 最多1队能反超，必定锁定前2
   const xMax = pts + 3*remain; // 最好情况：剩余场次全胜
+  // 注意：小组第3名仍有机会凭"8个最佳第三名"晋级，并非出局；
+  // 只有被另外3队全部锁定超过自己理论最高分（即确定垫底第4）才算真正出局
   const aheadCount = others.filter(o => ptsOf(g,o) > xMax).length;
-  if(aheadCount >= 2) return 'eliminated'; // 至少2队已锁定分数高于自己的理论最高分
+  if(aheadCount >= 3) return 'eliminated';
   return 'pending';
 }
 
@@ -985,7 +1003,8 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB){
     if(name){
       const realName = typeof name==='object' ? null : name;
       const labelHtml = label ? `<span class="slot-label">${label}</span>` : '';
-      btn.innerHTML = `<span>${realName||'待定'}${labelHtml}</span>` + (isWinner?'<span class="tag">晋级</span>':'');
+      const hintHtml = isWinner ? '' : '<span class="click-hint">点这里晋级 ›</span>';
+      btn.innerHTML = `<span>${realName||'待定'}${labelHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
       btn.addEventListener('click',()=>{
         if(!name) return;
         winners[matchId] = name;
@@ -994,7 +1013,7 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB){
       });
     } else {
       const labelHtml = label ? `<span class="slot-label">${label}</span>` : '';
-      btn.innerHTML = `<span>待定${labelHtml}</span>`;
+      btn.innerHTML = `<span>待定上一轮结果${labelHtml}</span>`;
     }
     wrap.appendChild(btn);
   });
@@ -1064,11 +1083,31 @@ function updateProgress(){
   // 步骤1: 用户打开过设置弹窗即算完成（简化判断：默认已有groupPicks）
   if(s1) s1.classList.add('done');
   // 步骤2: 第三名选了8个
-  if(s2) s2.classList.toggle('done', selectedThirds.size===8);
+  const thirdsDone = selectedThirds.size===8;
+  if(s2) s2.classList.toggle('done', thirdsDone);
   // 步骤3: 至少选了一场比赛
   if(s3) s3.classList.toggle('done', decided>0);
   // 步骤4: 选出了冠军
-  if(s4) s4.classList.toggle('done', !!getWinnerOf(finalId));
+  const champion = !!getWinnerOf(finalId);
+  if(s4) s4.classList.toggle('done', champion);
+
+  // 动态操作指引 + 设置按钮呼吸提示
+  const nextAction = document.getElementById('nextAction');
+  const settingsBtns = document.querySelectorAll('.settings-btn');
+  let guideText = '';
+  let pulseSettings = false;
+  if(!thirdsDone){
+    guideText = '👉 第一步：点击上方「⚙ 设置小组名次与第三名晋级」，确认各组1/2名，并勾选8个最佳第三名';
+    pulseSettings = true;
+  } else if(champion){
+    guideText = `🏆 预测完成！冠军是 ${getWinnerOf(finalId)}，可点击「重新预测」换一种结果`;
+  } else if(decided === 0){
+    guideText = '👉 第二步：在下方对阵图中，点击你认为会获胜的球队名称（按钮上写着"点这里晋级"），让它晋级下一轮';
+  } else {
+    guideText = `👉 继续点击对阵图中的球队，完成剩余 ${total - decided} 场比赛的晋级选择，直到选出冠军`;
+  }
+  if(nextAction) nextAction.textContent = guideText;
+  settingsBtns.forEach(b=>b.classList.toggle('pulse', pulseSettings));
 }
 
 function resetAll(){
