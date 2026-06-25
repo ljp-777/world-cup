@@ -678,7 +678,8 @@ function getThirdCandidates(){
   return Object.keys(groups).map(g=>{
     const t = third(g);
     return { group:g, team:t, pts:ptsOf(g,t) };
-  }).sort((a,b)=>b.pts-a.pts);
+  }).filter(c=>clinchStatus(c.group, c.team)!=='eliminated')
+    .sort((a,b)=>b.pts-a.pts);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
 
