@@ -338,7 +338,8 @@
     font-size:10px;
     font-weight:normal;
   }
-  .status-tag.qual{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
+  .status-tag.qual,.status-tag.locked{background:rgba(90,206,120,.22);color:#7fe6a0;border:1px solid rgba(90,206,120,.5);}
+  .status-tag.pred{background:rgba(86,214,255,.16);color:#8ee2ff;border:1px solid rgba(86,214,255,.45);}
   .status-tag.elim{background:rgba(216,68,58,.22);color:#ff8a80;border:1px solid rgba(216,68,58,.5);}
 
   .third-grid{
@@ -466,7 +467,11 @@
   .team-btn .tag{font-size:9px;color:#9fc7ad;}
   .team-btn.winner .tag{color:#5a4d10;}
   .team-btn .slot-label{font-size:11px;color:rgba(242,201,76,.7);margin-left:6px;font-weight:normal;}
+  .team-btn .slot-status{font-size:9px;border-radius:999px;padding:2px 5px;margin-left:6px;font-weight:bold;white-space:nowrap;}
+  .team-btn .slot-status.locked{background:rgba(90,206,120,.2);color:#7fe6a0;border:1px solid rgba(90,206,120,.45);}
+  .team-btn .slot-status.pred{background:rgba(86,214,255,.14);color:#8ee2ff;border:1px solid rgba(86,214,255,.4);}
   .team-btn.winner .slot-label{color:rgba(35,38,10,.6);}
+  .team-btn.winner .slot-status{display:none;}
   .team-btn .click-hint{font-size:10px;color:rgba(242,201,76,.65);margin-left:auto;padding-left:8px;flex-shrink:0;}
   .team-btn.empty .click-hint,.team-btn.winner .click-hint{display:none;}
   .team-btn:not(.empty):not(.winner):hover{
@@ -746,6 +751,19 @@ function groupRank(g, team){
   if(rest.third === team) return 3;
   return 4;
 }
+function qualificationBadge(g, team, rank){
+  if(rank <= 2){
+    // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
+    const locked = ptsOf(g, team) >= 6 || groupPlayedCount(g) >= groupTotalCount();
+    return locked
+      ? { cls:'locked', text:'确定晋级' }
+      : { cls:'pred', text:'预测晋级' };
+  }
+  if(rank === 4 && groupPlayedCount(g) >= groupTotalCount()){
+    return { cls:'elim', text:'淘汰' };
+  }
+  return null;
+}
 
 /* ---------- 8个最佳第三名（动态计算，随小组1/2名选择变化） ---------- */
 function getThirdCandidates(){
@@ -905,8 +923,8 @@ function renderGroupGrid(){
       const gd = goalDiffOf(g, team);
       const rank = groupRank(g, team);
       row.className = `gteam-row rank-${rank}`;
-      const statusHtml = rank <= 2 ? '<span class="status-tag qual">✅晋级</span>'
-        : rank === 4 ? '<span class="status-tag elim">❌淘汰</span>' : '';
+      const badge = qualificationBadge(g, team, rank);
+      const statusHtml = badge ? `<span class="status-tag ${badge.cls}">${badge.text}</span>` : '';
       row.innerHTML = `
         <span class="grank">${rank}</span>
         <span class="gteam-meta"><span class="gname" title="${team}">${team}</span>${statusHtml}</span>
@@ -998,10 +1016,10 @@ function renderBracket(){
 
   // 计算每个象限的 R16 / QF 胜者
   function quadR16Matches(q){
-    const m1 = buildMatch(q.r32[0].id, slotTeamName(q.r32[0].a), slotTeamName(q.r32[0].b), slotLabel(q.r32[0].a), slotLabel(q.r32[0].b));
-    const m2 = buildMatch(q.r32[1].id, slotTeamName(q.r32[1].a), slotTeamName(q.r32[1].b), slotLabel(q.r32[1].a), slotLabel(q.r32[1].b));
-    const m3 = buildMatch(q.r32[2].id, slotTeamName(q.r32[2].a), slotTeamName(q.r32[2].b), slotLabel(q.r32[2].a), slotLabel(q.r32[2].b));
-    const m4 = buildMatch(q.r32[3].id, slotTeamName(q.r32[3].a), slotTeamName(q.r32[3].b), slotLabel(q.r32[3].a), slotLabel(q.r32[3].b));
+    const m1 = buildMatch(q.r32[0].id, slotTeamName(q.r32[0].a), slotTeamName(q.r32[0].b), slotLabel(q.r32[0].a), slotLabel(q.r32[0].b), slotStatus(q.r32[0].a), slotStatus(q.r32[0].b));
+    const m2 = buildMatch(q.r32[1].id, slotTeamName(q.r32[1].a), slotTeamName(q.r32[1].b), slotLabel(q.r32[1].a), slotLabel(q.r32[1].b), slotStatus(q.r32[1].a), slotStatus(q.r32[1].b));
+    const m3 = buildMatch(q.r32[2].id, slotTeamName(q.r32[2].a), slotTeamName(q.r32[2].b), slotLabel(q.r32[2].a), slotLabel(q.r32[2].b), slotStatus(q.r32[2].a), slotStatus(q.r32[2].b));
+    const m4 = buildMatch(q.r32[3].id, slotTeamName(q.r32[3].a), slotTeamName(q.r32[3].b), slotLabel(q.r32[3].a), slotLabel(q.r32[3].b), slotStatus(q.r32[3].a), slotStatus(q.r32[3].b));
     return [m1,m2,m3,m4];
   }
   function quadR16Winners(q){
@@ -1080,8 +1098,24 @@ function slotLabel(slot){
   if(slot.type==='3set') return `3${slot.letters}`;
   return '';
 }
+function slotStatus(slot){
+  if(slot.type==='1' || slot.type==='2'){
+    const team = slot.type==='1' ? first(slot.g) : second(slot.g);
+    return qualificationBadge(slot.g, team, slot.type==='1' ? 1 : 2);
+  }
+  if(slot.type==='3set'){
+    const letter = thirdAssignmentMap.get(slot);
+    if(!letter) return null;
+    const progress = overallGroupProgress();
+    const locked = progress.played >= progress.total;
+    return locked
+      ? { cls:'locked', text:'确定晋级' }
+      : { cls:'pred', text:'预测晋级' };
+  }
+  return null;
+}
 
-function buildMatch(matchId, nameA, nameB, labelA, labelB){
+function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
   const wrap = document.createElement('div');
   wrap.className = 'match';
   const tag = document.createElement('div');
@@ -1089,15 +1123,16 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB){
   tag.textContent = matchId;
   wrap.appendChild(tag);
 
-  [['a',nameA,labelA],['b',nameB,labelB]].forEach(([side,name,label])=>{
+  [['a',nameA,labelA,statusA],['b',nameB,labelB,statusB]].forEach(([side,name,label,status])=>{
     const btn = document.createElement('button');
     const isWinner = winners[matchId] === name && name;
     btn.className = 'team-btn' + (isWinner?' winner':'') + (!name?' empty':'');
     if(name){
       const realName = typeof name==='object' ? null : name;
       const labelHtml = label ? `<span class="slot-label">${label}</span>` : '';
+      const statusHtml = status ? `<span class="slot-status ${status.cls}">${status.text}</span>` : '';
       const hintHtml = isWinner ? '' : '<span class="click-hint">点这里晋级 ›</span>';
-      btn.innerHTML = `<span>${realName||'待定'}${labelHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
+      btn.innerHTML = `<span>${realName||'待定'}${labelHtml}${statusHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
       btn.addEventListener('click',()=>{
         if(!name) return;
         winners[matchId] = name;
