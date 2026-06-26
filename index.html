@@ -475,12 +475,24 @@
     transition:.2s ease;
   }
   .match:hover{transform:translateY(-1px);border-color:rgba(242,201,76,.42);}
-  .match-id{
-    font-size:9px;
-    background:linear-gradient(90deg, rgba(242,201,76,.24), rgba(47,118,80,.82));
-    padding:1px 6px;
-    color:#dff0e4;
-    letter-spacing:1px;
+  .match-date{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    padding:5px 8px 3px;
+    color:#b9d9c5;
+    font-size:10px;
+    line-height:1.2;
+    letter-spacing:.5px;
+    background:rgba(255,255,255,.035);
+  }
+  .match-date .date-main{
+    color:#ffe28a;
+    font-weight:bold;
+  }
+  .match-date .date-sub{
+    color:#8fbfa0;
   }
   .match-note{
     font-size:9px;
@@ -1365,13 +1377,51 @@ function slotStatus(slot){
   return null;
 }
 
+function matchDateOf(matchId){
+  const dateMap = {
+    // 1/16 决赛（R32）
+    M73:'2026-06-28', M74:'2026-06-28', M75:'2026-06-29', M76:'2026-06-29',
+    M77:'2026-06-30', M78:'2026-06-30', M79:'2026-07-01', M80:'2026-07-01',
+    M81:'2026-07-02', M82:'2026-07-02', M83:'2026-07-03', M84:'2026-07-03',
+    M85:'2026-07-04', M86:'2026-07-04', M87:'2026-07-05', M88:'2026-07-05',
+    // 1/8 决赛
+    M89:'2026-07-06', M90:'2026-07-06', M91:'2026-07-07', M92:'2026-07-07',
+    M93:'2026-07-08', M94:'2026-07-08', M95:'2026-07-09', M96:'2026-07-09',
+    // 1/4 决赛
+    M97:'2026-07-10', M98:'2026-07-10', M99:'2026-07-11', M100:'2026-07-11',
+    // 半决赛 / 决赛
+    M101:'2026-07-14', M102:'2026-07-15', M104:'2026-07-19'
+  };
+  return dateMap[matchId] || '';
+}
+
+function matchStageOf(matchId){
+  if(matchId === finalId) return '决赛';
+  if(sfids.includes(matchId)) return '半决赛';
+  if(quadrants.some(q => q.qfid === matchId)) return '1/4决赛';
+  if(quadrants.some(q => q.r16ids.includes(matchId))) return '1/8决赛';
+  return '1/16决赛';
+}
+
+function formatMatchDate(dateStr){
+  if(!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  if(!year || !month || !day) return dateStr;
+  return `${Number(month)}月${Number(day)}日`;
+}
+
 function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
   const wrap = document.createElement('div');
   wrap.className = 'match';
-  const tag = document.createElement('div');
-  tag.className='match-id';
-  tag.textContent = matchId;
-  wrap.appendChild(tag);
+  const matchDate = matchDateOf(matchId);
+  const matchStage = matchStageOf(matchId);
+
+  if(matchDate){
+    const date = document.createElement('div');
+    date.className = 'match-date';
+    date.innerHTML = `<span class="date-main">${formatMatchDate(matchDate)}</span><span class="date-sub">· ${matchStage}</span>`;
+    wrap.appendChild(date);
+  }
 
   [['a',nameA,labelA,statusA],['b',nameB,labelB,statusB]].forEach(([side,name,label,status])=>{
     const btn = document.createElement('button');
