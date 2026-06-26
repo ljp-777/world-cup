@@ -178,9 +178,10 @@
     position:relative;
   }
   .modal-close{
-    position:absolute;
-    top:14px;
-    right:14px;
+    position:sticky;
+    top:0;
+    float:right;
+    margin:-16px -8px 0 0;
     background:#1d4a2d;
     border:1px solid var(--gold);
     color:var(--chalk);
@@ -189,6 +190,7 @@
     border-radius:50%;
     font-size:14px;
     cursor:pointer;
+    z-index:10;
   }
   .modal-close:hover{background:var(--red-card);}
   .modal-done-btn{
@@ -369,14 +371,23 @@
   .third-count.good{color:#9fe6a0;}
 
   .round-row{
+    position:relative;
     display:flex;
-    gap:10px;
+    gap:22px;
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
     padding-bottom:6px;
     margin-bottom:14px;
     align-items:stretch;
     justify-content:center;
+  }
+  .bracket-lines{
+    position:absolute;
+    left:0;
+    top:0;
+    pointer-events:none;
+    overflow:visible;
+    z-index:0;
   }
   .mobile-rounds{display:none;}
   .mobile-round-section{
@@ -426,15 +437,25 @@
     to{transform:rotate(360deg);}
   }
   .round-col{
+    position:relative;
+    z-index:1;
     min-width:200px;
     display:flex;
     flex-direction:column;
     gap:8px;
-    justify-content:space-around;
+    justify-content:stretch;
   }
   .round-col.r32-col{min-width:215px;}
-  .round-col.lifted-col{transform:translateY(-12px);}
+  .round-match-list{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-around;
+    gap:8px;
+  }
   .center-col{
+    position:relative;
+    z-index:1;
     min-width:230px;
     display:flex;
     flex-direction:column;
@@ -467,14 +488,17 @@
     margin-bottom:2px;
   }
   .match{
+    position:relative;
     background:linear-gradient(180deg, rgba(21,64,41,.98), rgba(10,39,25,.98));
     border:1px solid rgba(255,255,255,.12);
     border-radius:10px;
-    overflow:hidden;
+    overflow:visible;
     box-shadow:0 6px 16px rgba(0,0,0,.2);
     transition:.2s ease;
   }
   .match:hover{transform:translateY(-1px);border-color:rgba(242,201,76,.42);}
+  .match-date{border-radius:10px 10px 0 0;}
+  .team-btn:last-child{border-radius:0 0 10px 10px;}
   .match-date{
     display:flex;
     align-items:center;
@@ -632,7 +656,7 @@
     .trophy-box{padding:18px 14px;}
     .champion-name{font-size:26px;}
     .modal-box{padding:18px 12px 14px;border-radius:16px;}
-    .modal-close{top:8px;right:8px;width:26px;height:26px;font-size:12px;}
+    .modal-close{width:26px;height:26px;font-size:12px;margin:-10px -4px 0 0;}
   }
 </style>
 </head>
@@ -1307,8 +1331,11 @@ function renderBracket(){
 
   const row = document.createElement('div');
   row.className = 'round-row';
+  [leftR32, leftR16, leftQF].forEach(col=>col.classList.add('left-side'));
+  [rightQF, rightR16, rightR32].forEach(col=>col.classList.add('right-side'));
   [leftR32, leftR16, leftQF, centerCol, rightQF, rightR16, rightR32].forEach(c=>row.appendChild(c));
   area.appendChild(row);
+  drawBracketLines(row);
 
   const mobileRounds = document.createElement('div');
   mobileRounds.className = 'mobile-rounds';
@@ -1327,13 +1354,15 @@ function renderBracket(){
 
 function makeCol(title, matchEls, isR32){
   const col = document.createElement('div');
-  const shouldLift = title === '1/8决赛' || title === '1/4决赛';
-  col.className = 'round-col' + (isR32 ? ' r32-col' : '') + (shouldLift ? ' lifted-col' : '');
+  col.className = 'round-col' + (isR32 ? ' r32-col' : '');
   const t = document.createElement('div');
   t.className='round-title';
   t.textContent = title;
+  const list = document.createElement('div');
+  list.className = 'round-match-list';
   col.appendChild(t);
-  matchEls.forEach(m=>col.appendChild(m));
+  matchEls.forEach(m=>list.appendChild(m));
+  col.appendChild(list);
   return col;
 }
 
@@ -1413,6 +1442,7 @@ function formatMatchDate(dateStr){
 function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
   const wrap = document.createElement('div');
   wrap.className = 'match';
+  wrap.dataset.matchId = matchId;
   const matchDate = matchDateOf(matchId);
   const matchStage = matchStageOf(matchId);
 
@@ -1447,6 +1477,45 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
     wrap.appendChild(btn);
   });
   return wrap;
+}
+
+function drawBracketLines(row){
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('bracket-lines');
+  const width = row.scrollWidth;
+  const height = row.scrollHeight;
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', height);
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  row.prepend(svg);
+
+  const rowRect = row.getBoundingClientRect();
+  const matchRect = id => row.querySelector(`[data-match-id="${id}"]`)?.getBoundingClientRect();
+  const point = (rect, side) => ({
+    x: side === 'right' ? rect.right - rowRect.left + row.scrollLeft : rect.left - rowRect.left + row.scrollLeft,
+    y: rect.top - rowRect.top + row.scrollTop + rect.height / 2
+  });
+  const drawPath = (fromId, toId) => {
+    const fromRect = matchRect(fromId);
+    const toRect = matchRect(toId);
+    if(!fromRect || !toRect) return;
+    const fromIsLeft = fromRect.left < toRect.left;
+    const from = point(fromRect, fromIsLeft ? 'right' : 'left');
+    const to = point(toRect, fromIsLeft ? 'left' : 'right');
+    const midX = from.x + (to.x - from.x) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${from.x} ${from.y} H ${midX} V ${to.y} H ${to.x}`);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'rgba(242,201,76,.48)');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  };
+
+  Object.entries(directDependents).forEach(([fromId, toIds])=>{
+    toIds.forEach(toId=>drawPath(fromId, toId));
+  });
 }
 
 /* 当某场比赛的结果改变时，清除后续依赖它的所有已选结果 */
