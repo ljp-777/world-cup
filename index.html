@@ -255,6 +255,9 @@
     align-items:center;
     gap:6px;
   }
+  .group-head.done,.gteam-row.done{
+    grid-template-columns:28px minmax(0,1fr) 28px 32px 32px;
+  }
   .group-head{
     padding:0 6px 4px;
     color:#9fc7ad;
@@ -564,6 +567,7 @@
     .stage{padding:12px 10px;border-radius:12px;}
     .group-grid{grid-template-columns:1fr;gap:8px;}
     .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px 82px;gap:4px;}
+    .group-head.done,.gteam-row.done{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px;}
     .rank-actions .rank-btn{min-width:38px;padding:3px 5px;}
     .third-grid{grid-template-columns:1fr;}
     .round-row{gap:6px;padding-bottom:6px;}
@@ -1059,8 +1063,8 @@ function renderGroupGrid(){
     const table = document.createElement('div');
     table.className = 'group-table';
     table.innerHTML = `
-      <div class="group-head">
-        <span>名</span><span>球队</span><span>场次</span><span>积分</span><span>进球</span><span>调整</span>
+      <div class="group-head ${groupDone?'done':''}">
+        <span>名</span><span>球队</span><span>场次</span><span>积分</span><span>进球</span>${groupDone?'':'<span>调整</span>'}
       </div>
     `;
     groups[g].forEach(team=>{
@@ -1072,13 +1076,12 @@ function renderGroupGrid(){
       const gf = goalsForOf(g, team);
       const played = gamesOf(g, team);
       const rank = groupRank(g, team);
-      row.className = `gteam-row rank-${rank}`;
+      row.className = `gteam-row rank-${rank} ${groupDone?'done':''}`;
       const badge = qualificationBadge(g, team, rank);
       const statusHtml = badge ? `<span class="status-tag ${badge.cls}">${badge.text}</span>` : '';
-      const disabledAttr = groupDone ? 'disabled aria-disabled="true" title="已完赛，名次不可切换"' : '';
-      const actionsHtml = groupDone && rank > 2 ? '' : `
-          <button class="rank-btn ${isFirst?'active-first':''}" data-role="first" ${disabledAttr}>第1</button>
-          <button class="rank-btn ${isSecond?'active-second':''}" data-role="second" ${disabledAttr}>第2</button>
+      const actionsHtml = groupDone ? '' : `
+          <button class="rank-btn ${isFirst?'active-first':''}" data-role="first">第1</button>
+          <button class="rank-btn ${isSecond?'active-second':''}" data-role="second">第2</button>
         `;
       row.innerHTML = `
         <span class="grank">${rank}</span>
@@ -1086,7 +1089,7 @@ function renderGroupGrid(){
         <span class="gpts">${played}</span>
         <span class="gpts">${pts}</span>
         <span class="ggd">${gf}</span>
-        <span class="rank-actions">${actionsHtml}</span>
+        ${groupDone?'':`<span class="rank-actions">${actionsHtml}</span>`}
       `;
       if(!groupDone){
         row.querySelector('[data-role="first"]').addEventListener('click', ()=>{
