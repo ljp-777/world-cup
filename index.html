@@ -228,6 +228,13 @@
   .modal-done-btn:hover{background:#e6c455;}
   .modal-done-btn:disabled{background:#5d7c69;cursor:not-allowed;opacity:.6;}
   .modal-warn{color:#ff8a80;font-size:12px;text-align:center;margin-top:6px;min-height:18px;}
+  .rules-summary{font-size:13px;line-height:1.7;color:#d5eadc;margin:0 0 12px;}
+  .rules-table-wrap{overflow:auto;max-height:48vh;border:1px solid rgba(255,255,255,.12);border-radius:10px;}
+  .rules-table{width:100%;border-collapse:collapse;min-width:720px;font-size:12px;}
+  .rules-table th,.rules-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center;white-space:nowrap;}
+  .rules-table th{position:sticky;top:0;background:#123321;color:#ffe28a;z-index:1;}
+  .rules-table tr.current{background:rgba(242,201,76,.14);color:#ffe28a;font-weight:bold;}
+  .rules-empty{padding:18px;text-align:center;color:#ffb0a8;font-size:13px;}
 
   .group-grid{
     display:grid;
@@ -374,7 +381,6 @@
     border-color:var(--gold);
     background:#2a4a30;
   }
-  .third-pick.locked{cursor:default;opacity:.72;}
   .third-pick input{accent-color:var(--gold);}
   .third-team{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:bold;}
   .third-score{color:#9fc7ad;font-size:12px;white-space:nowrap;}
@@ -594,6 +600,7 @@
       <div class="subtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步预测你的冠军！</div>
       <div class="hero-actions">
         <button class="settings-btn" onclick="openModal()">⚙ 设置小组名次与第三名晋级</button>
+        <button class="ghost-btn" onclick="openRulesModal()">📋 查看对阵规则</button>
         <a class="ghost-btn" href="#bracketArea">查看淘汰赛对阵 ↓</a>
       </div>
     </div>
@@ -633,6 +640,17 @@
     </div>
     <button class="modal-done-btn" id="modalDoneBtn" onclick="tryCloseModal()">完成设置，查看对阵</button>
     <div class="modal-warn" id="modalWarn"></div>
+  </div>
+</div>
+
+<div id="rulesOverlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRulesModal()" aria-label="关闭对阵规则弹窗">✕</button>
+    <div class="stage">
+      <h2 id="rulesTitle">第三名晋级对阵规则 <span class="hint">按已选8个最佳第三名匹配 FIFA 对阵表</span></h2>
+      <div id="rulesContent"></div>
+    </div>
+    <button class="modal-done-btn" onclick="closeRulesModal()">关闭</button>
   </div>
 </div>
 
@@ -882,12 +900,24 @@ function getThirdCandidates(){
   return Object.keys(groups).map(g=>{
     const t = third(g);
     return { group:g, team:t, pts:ptsOf(g,t), gf:goalsForOf(g,t) };
-  }).filter(c=>clinchStatus(c.group, c.team)!=='eliminated')
-    .sort((a,b)=>b.pts-a.pts || b.gf-a.gf);
+  }).sort((a,b)=>b.pts-a.pts || b.gf-a.gf);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
 const SETTINGS_CACHE_KEY = 'worldCupGroupSettings';
 const SETTINGS_CACHE_VERSION = 'thirds-points-goals-v1';
+let thirdPlaceRules = [];
+
+async function loadThirdPlaceRules(){
+  try{
+    const res = await fetch('./third_place_495.json');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rules = await res.json();
+    thirdPlaceRules = Array.isArray(rules) ? rules : [];
+  } catch(error){
+    console.warn('Failed to load third place rules:', error);
+    thirdPlaceRules = [];
+  }
+}
 
 function loadSettingsCache(){
   try{
@@ -986,35 +1016,42 @@ function teamFromSlot(slot){
   }
 }
 
-/* 用简单的回溯匹配，把8个已选第三名分配到8个3set槛位，保证一一对应 */
+/* 按 FIFA 第三名对阵规则，把已选第三名分配给对应小组第一 */
 function assignThirds(){
   const slots = r32.filter(m=>m.a.type==='3set'||m.b.type==='3set')
                     .map(m=> m.a.type==='3set'? m.a : m.b);
-  const letters = [...selectedThirds];
-  const assignment = {}; // slotIndex -> letter
-  function backtrack(i, used){
-    if(i===slots.length) return {...assignment};
-    const slot = slots[i];
-    const options = slot.letters.split('').filter(l=>letters.includes(l) && !used.has(l));
-    for(const l of options){
-      assignment[i]=l;
-      used.add(l);
-      const res = backtrack(i+1, used);
-      if(res) return res;
-      used.delete(l);
-      delete assignment[i];
-    }
-    return null;
-  }
-  const result = backtrack(0, new Set());
-  // 映射回 slot对象引用
   const map = new Map();
-  if(result){
-    slots.forEach((slot,i)=>{ map.set(slot, result[i]); });
-  }
+
+  if(selectedThirds.size !== 8) return map;
+  const rule = getSelectedThirdRule();
+  if(!rule) return map;
+
+  r32.forEach(match=>{
+    const thirdSlot = match.a.type==='3set' ? match.a : match.b.type==='3set' ? match.b : null;
+    const firstSlot = match.a.type==='1' ? match.a : match.b.type==='1' ? match.b : null;
+    if(!thirdSlot || !firstSlot) return;
+    const value = rule.slots[`1${firstSlot.g}`];
+    const letter = String(value || '').match(/^3([A-L])$/)?.[1];
+    if(letter && selectedThirds.has(letter)) map.set(thirdSlot, letter);
+  });
+
   return map;
 }
 let thirdAssignmentMap = new Map();
+
+function thirdRuleKey(rule){
+  return Object.values(rule?.slots || {})
+    .map(value=>String(value).match(/^3([A-L])$/)?.[1])
+    .filter(Boolean)
+    .sort()
+    .join('');
+}
+
+function getSelectedThirdRule(){
+  if(selectedThirds.size !== 8) return null;
+  const selectedKey = [...selectedThirds].sort().join('');
+  return thirdPlaceRules.find(rule=>thirdRuleKey(rule) === selectedKey) || null;
+}
 
 function slotTeamName(slot){
   if(slot.type==='1') return first(slot.g);
@@ -1034,6 +1071,15 @@ function openModal(){
 }
 function closeModal(){
   document.getElementById('modalOverlay').style.display = 'none';
+}
+function openRulesModal(){
+  renderThirdPlaceRules();
+  const overlay = document.getElementById('rulesOverlay');
+  overlay.style.display = 'flex';
+  overlay.querySelector('.modal-close').focus();
+}
+function closeRulesModal(){
+  document.getElementById('rulesOverlay').style.display = 'none';
 }
 function tryCloseModal(){
   const n = selectedThirds.size;
@@ -1070,7 +1116,6 @@ function renderGroupGrid(){
       </div>
     `;
     groups[g].forEach(team=>{
-      console.log(team);
       const row = document.createElement('div');
       const isFirst = groupPicks[g].first === team;
       const isSecond = groupPicks[g].second === team;
@@ -1127,6 +1172,7 @@ function onGroupPicksChanged(){
   selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
   renderGroupGrid();
   renderThirdGrid();
+  renderThirdPlaceRules();
   recomputeAndRender();
 }
 
@@ -1136,10 +1182,9 @@ function renderThirdGrid(){
   const thirdCandidates = getThirdCandidates();
   thirdCandidates.forEach(c=>{
     const div = document.createElement('label');
-    const groupDone = isGroupDone(c.group);
-    div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'')+(groupDone?' locked':'');
+    div.className = 'third-pick'+(selectedThirds.has(c.group)?' checked':'');
     div.innerHTML = `
-      <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} ${groupDone?'disabled':''} data-g="${c.group}"/>
+      <input type="checkbox" ${selectedThirds.has(c.group)?'checked':''} data-g="${c.group}"/>
       <span class="third-team" title="${c.group}组 ${c.team}">${c.group}组 · ${c.team}${teamFlagHtml(c.team)}</span>
       <span class="third-score">${c.pts}分 / 进${goalsForOf(c.group, c.team)}</span>
     `;
@@ -1166,7 +1211,34 @@ function updateThirdHint(){
 }
 function onThirdsChanged(){
   updateThirdHint();
+  renderThirdPlaceRules();
   recomputeAndRender();
+}
+
+function renderThirdPlaceRules(){
+  const content = document.getElementById('rulesContent');
+  if(!content) return;
+  if(!thirdPlaceRules.length){
+    content.innerHTML = '<div class="rules-empty">对阵规则加载中或加载失败，请稍后再试。</div>';
+    return;
+  }
+  const currentRule = getSelectedThirdRule();
+  const selectedText = [...selectedThirds].sort().join('、') || '未选择';
+  const slotKeys = ['1A','1B','1D','1E','1G','1I','1K','1L'];
+  const rows = thirdPlaceRules.map(rule=>{
+    const isCurrent = currentRule && rule.id === currentRule.id;
+    const cells = slotKeys.map(key=>`<td>${rule.slots?.[key] || '-'}</td>`).join('');
+    return `<tr class="${isCurrent?'current':''}"><td>${isCurrent?'当前规则 · ':''}#${rule.id}</td><td>${thirdRuleKey(rule).split('').join('、')}</td>${cells}</tr>`;
+  }).join('');
+  content.innerHTML = `
+    <p class="rules-summary">当前已选第三名小组：<strong>${selectedText}</strong>。${currentRule ? `已匹配规则 #${currentRule.id}。` : '请恰好选择8个第三名后查看当前匹配规则。'}</p>
+    <div class="rules-table-wrap">
+      <table class="rules-table">
+        <thead><tr><th>规则</th><th>第三名组合</th>${slotKeys.map(key=>`<th>${key} 对阵</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 function getWinnerOf(matchId){ return winners[matchId] || null; }
@@ -1258,7 +1330,10 @@ function makeCol(title, matchEls, isR32){
 function slotLabel(slot){
   if(slot.type==='1') return `1${slot.g}`;
   if(slot.type==='2') return `2${slot.g}`;
-  if(slot.type==='3set') return `3${slot.letters}`;
+  if(slot.type==='3set'){
+    const letter = thirdAssignmentMap.get(slot);
+    return letter ? `3${letter}` : `3${slot.letters}`;
+  }
   return '';
 }
 function slotStatus(slot){
@@ -1418,8 +1493,12 @@ function resetAll(){
 document.getElementById('modalOverlay').addEventListener('click', e=>{
   if(e.target.id === 'modalOverlay') closeModal();
 });
+document.getElementById('rulesOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'rulesOverlay') closeRulesModal();
+});
 document.addEventListener('keydown', e=>{
   if(e.key === 'Escape' && document.getElementById('modalOverlay').style.display === 'flex') closeModal();
+  if(e.key === 'Escape' && document.getElementById('rulesOverlay').style.display === 'flex') closeRulesModal();
 });
 
 /* init */
@@ -1427,6 +1506,7 @@ async function init(){
   try{
     const apiGroups = await getGroups("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhM2NmMjA1ZmU1YWQxNjA0OGM2NDg5NSIsImlhdCI6MTc4MjM3OTAxNCwiZXhwIjoxNzg5NjM2NjE0fQ.rld-IK8HsTehqLRsA1yegiFO0Bx7-36i_MWA0vfSlII");
     applyGroupApiData(apiGroups);
+    await loadThirdPlaceRules();
     preloadTeamFlags();
     initGroupPicks();
     selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
