@@ -140,6 +140,7 @@
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:8px;
   }
   .hint{font-size:11px;color:#9fc7ad;font-weight:normal;}
   .inline-rule-btn{
@@ -369,10 +370,28 @@
     display:flex;
     gap:10px;
     overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
     padding-bottom:6px;
     margin-bottom:14px;
     align-items:stretch;
     justify-content:center;
+  }
+  .mobile-rounds{display:none;}
+  .mobile-round-section{
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(242,201,76,.18);
+    border-radius:12px;
+    padding:10px;
+    margin-bottom:12px;
+  }
+  .mobile-round-section .round-title{
+    text-align:left;
+    margin:0 0 8px;
+  }
+  .mobile-match-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:8px;
   }
   .bracket-guide{
     margin:0 0 10px;
@@ -543,6 +562,7 @@
     .quick-guide{text-align:center;margin-left:auto;margin-right:auto;}
     .eyebrow{margin:0 auto;}
     .hero-actions{justify-content:center;}
+    .stage h2{align-items:flex-start;flex-direction:column;}
   }
   @media (max-width:640px){
     body{padding:10px;}
@@ -550,14 +570,22 @@
     .subtitle{font-size:12px;}
     .hero{padding:14px 12px;border-radius:14px;}
     .hero-actions{gap:8px;}
-    .ghost-btn,.settings-btn{padding:10px 14px;font-size:12px;}
+    .ghost-btn,.settings-btn{width:100%;justify-content:center;padding:10px 14px;font-size:12px;}
+    .quick-guide{font-size:12px;line-height:1.55;}
     .stage{padding:12px 10px;border-radius:12px;}
+    .stage h2{font-size:14px;line-height:1.45;}
+    .inline-rule-btn{margin:6px 0 0;padding:5px 9px;font-size:10px;}
     .group-grid{grid-template-columns:1fr;gap:8px;}
     .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px 82px;gap:4px;}
     .group-head.done,.gteam-row.done{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px;}
     .rank-actions .rank-btn{min-width:38px;padding:3px 5px;}
     .third-grid{grid-template-columns:1fr;}
-    .round-row{gap:6px;padding-bottom:6px;}
+    .bracket-guide{font-size:11px;line-height:1.5;padding:0 8px;}
+    .round-row{display:none;}
+    .mobile-rounds{display:block;}
+    .mobile-round-section{padding:9px;margin-bottom:10px;}
+    .mobile-match-list{grid-template-columns:1fr;gap:8px;}
+    .round-col,.center-col{scroll-snap-align:start;}
     .round-col{min-width:150px;gap:8px;}
     .round-col.r32-col{min-width:160px;}
     .center-col{min-width:170px;}
@@ -1269,6 +1297,20 @@ function renderBracket(){
   row.className = 'round-row';
   [leftR32, leftR16, leftQF, centerCol, rightQF, rightR16, rightR32].forEach(c=>row.appendChild(c));
   area.appendChild(row);
+
+  const mobileRounds = document.createElement('div');
+  mobileRounds.className = 'mobile-rounds';
+  [
+    makeMobileRound("1/16决赛", [...quadR16Matches(Q1), ...quadR16Matches(Q2), ...quadR16Matches(Q3), ...quadR16Matches(Q4)]),
+    makeMobileRound("1/8决赛", [...quadR16Winners(Q1), ...quadR16Winners(Q2), ...quadR16Winners(Q3), ...quadR16Winners(Q4)]),
+    makeMobileRound("1/4决赛", [quadQF(Q1), quadQF(Q2), quadQF(Q3), quadQF(Q4)]),
+    makeMobileRound("半决赛", [
+      buildMatch(sfids[0], getWinnerOf(Q1.qfid), getWinnerOf(Q2.qfid)),
+      buildMatch(sfids[1], getWinnerOf(Q3.qfid), getWinnerOf(Q4.qfid))
+    ]),
+    makeMobileRound("决赛", [buildMatch(finalId, getWinnerOf(sfids[0]), getWinnerOf(sfids[1]))])
+  ].forEach(section=>mobileRounds.appendChild(section));
+  area.appendChild(mobileRounds);
 }
 
 function makeCol(title, matchEls, isR32){
@@ -1281,6 +1323,20 @@ function makeCol(title, matchEls, isR32){
   col.appendChild(t);
   matchEls.forEach(m=>col.appendChild(m));
   return col;
+}
+
+function makeMobileRound(title, matchEls){
+  const section = document.createElement('section');
+  section.className = 'mobile-round-section';
+  const heading = document.createElement('div');
+  heading.className = 'round-title';
+  heading.textContent = title;
+  const list = document.createElement('div');
+  list.className = 'mobile-match-list';
+  matchEls.forEach(match=>list.appendChild(match));
+  section.appendChild(heading);
+  section.appendChild(list);
+  return section;
 }
 
 function slotLabel(slot){
