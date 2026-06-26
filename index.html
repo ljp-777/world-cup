@@ -893,8 +893,6 @@ function getThirdCandidates(){
   }).sort((a,b)=>b.pts-a.pts || b.gf-a.gf);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
-const SETTINGS_CACHE_KEY = 'worldCupGroupSettings';
-const SETTINGS_CACHE_VERSION = 'thirds-points-goals-v1';
 let thirdPlaceRules = [];
 
 async function loadThirdPlaceRules(){
@@ -907,43 +905,6 @@ async function loadThirdPlaceRules(){
     console.warn('Failed to load third place rules:', error);
     thirdPlaceRules = [];
   }
-}
-
-function loadSettingsCache(){
-  try{
-    const raw = localStorage.getItem(SETTINGS_CACHE_KEY);
-    if(!raw) return;
-    const cache = JSON.parse(raw);
-    if(cache.groupPicks){
-      Object.keys(groups).forEach(g=>{
-        const pick = cache.groupPicks[g];
-        if(pick && groups[g].includes(pick.first) && groups[g].includes(pick.second) && pick.first !== pick.second){
-          groupPicks[g] = { first: pick.first, second: pick.second };
-        }
-      });
-    }
-    const validThirdGroups = new Set(getThirdCandidates().map(c=>c.group));
-    const cachedThirds = Array.isArray(cache.selectedThirds)
-      ? cache.selectedThirds.filter(g=>validThirdGroups.has(g))
-      : [];
-    if(cache.version === SETTINGS_CACHE_VERSION && cachedThirds.length === 8){
-      selectedThirds = new Set(cachedThirds);
-    } else {
-      selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
-    }
-  } catch(e){
-    localStorage.removeItem(SETTINGS_CACHE_KEY);
-  }
-}
-
-function saveSettingsCache(){
-  try{
-    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
-      version: SETTINGS_CACHE_VERSION,
-      groupPicks,
-      selectedThirds:[...selectedThirds]
-    }));
-  } catch(e){}
 }
 
 /* ---------- 1/16决赛对阵：分成4个象限（对应赛程图的左上/左下/右上/右下） ---------- */
@@ -1079,7 +1040,6 @@ function tryCloseModal(){
     return;
   }
   warn.textContent = '';
-  saveSettingsCache();
   closeModal();
 }
 
@@ -1467,7 +1427,6 @@ function updateProgress(){
 
 function resetAll(){
   winners = {};
-  localStorage.removeItem(SETTINGS_CACHE_KEY);
   Object.keys(groups).forEach(g=>{
     const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
     groupPicks[g] = { first: sorted[0], second: sorted[1] };
@@ -1498,7 +1457,6 @@ async function init(){
     preloadTeamFlags();
     initGroupPicks();
     selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
-    loadSettingsCache();
     lockCompletedGroupPicks();
     renderGroupGrid();
     renderThirdGrid();
