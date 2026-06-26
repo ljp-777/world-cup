@@ -377,7 +377,7 @@
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
     padding-bottom:6px;
-    margin-bottom:14px;
+    margin-bottom:6px;
     align-items:stretch;
     justify-content:center;
   }
@@ -565,39 +565,97 @@
   .team-btn:not(.empty):not(.winner):hover .click-hint{color:var(--gold);}
 
   .final-zone{
-    max-width:600px;
-    margin:28px auto 0;
+    max-width:520px;
+    margin:-92px auto 0;
     text-align:center;
   }
-  .trophy-box{
-    background:linear-gradient(160deg,#2a210a,#1a1406);
-    border:3px solid var(--gold);
-    border-radius:16px;
-    padding:30px 24px;
-    box-shadow:0 0 40px rgba(242,201,76,.18), inset 0 0 30px rgba(242,201,76,.06);
-    transition:.3s ease;
+  .final-match-area{
+    margin-bottom:8px;
   }
-  .trophy-box.has-champion{
-    animation:champGlow 2s ease-in-out infinite alternate;
+  .final-match-area .round-title{
+    font-size:12px;
+    letter-spacing:3px;
+    margin-bottom:4px;
+    color:#ffe28a;
+    text-shadow:0 0 14px rgba(242,201,76,.35);
   }
-  @keyframes champGlow{
-    from{box-shadow:0 0 30px rgba(242,201,76,.18), inset 0 0 20px rgba(242,201,76,.06);}
-    to{box-shadow:0 0 60px rgba(242,201,76,.32), inset 0 0 40px rgba(242,201,76,.1);}
+  .final-match-area .match.final-showdown{
+    max-width:420px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    align-items:stretch;
+    gap:6px;
+    border:2px solid rgba(242,201,76,.78);
+    border-radius:18px;
+    background:
+      radial-gradient(circle at 50% -20%, rgba(242,201,76,.28), transparent 36%),
+      linear-gradient(135deg, rgba(42,33,10,.98), rgba(8,32,22,.98) 46%, rgba(21,9,32,.96));
+    box-shadow:0 18px 46px rgba(0,0,0,.42), 0 0 34px rgba(242,201,76,.16), inset 0 0 34px rgba(242,201,76,.08);
+    padding:6px 8px;
+    overflow:hidden;
   }
-  .trophy-box .label{font-size:12px;letter-spacing:3px;color:#e0c060;text-transform:uppercase;}
-  .champion-name{
-    font-size:38px;
-    margin:12px 0 6px;
-    color:var(--gold);
-    text-shadow:0 0 16px rgba(212,175,55,.5);
+  .final-match-area .match.final-showdown::before{
+    content:"🏆 FINAL SHOWDOWN\A 7月19日 · 决赛";
+    display:block;
+    grid-column:1 / -1;
+    color:#ffe28a;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:2px;
+    margin:0 0 4px;
+    line-height:1.6;
+    white-space:pre-line;
+    text-shadow:0 0 12px rgba(242,201,76,.45);
   }
-  .champion-placeholder{
-    font-size:18px;
-    color:#7a6f4a;
+  .final-showdown .match-date{
+    grid-column:1 / -1;
+    border-radius:12px;
+    margin-bottom:0;
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(242,201,76,.24);
+  }
+  .final-showdown .team-btn{
+    min-width:0;
+    min-height:58px;
+    justify-content:center;
+    border:1px solid rgba(242,201,76,.24);
+    border-radius:12px!important;
+    margin-top:0;
+    padding:8px 9px;
+    font-size:14px;
+    text-align:center;
+    background:rgba(255,255,255,.07);
+  }
+  .final-showdown .team-btn > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .final-showdown .team-btn:hover{
+    background:rgba(242,201,76,.16);
+    transform:translateY(-1px);
+  }
+  .final-showdown .team-btn.winner{
+    background:linear-gradient(135deg,#f2c94c,#fff0a8);
+    color:#23260a;
+    box-shadow:0 0 22px rgba(242,201,76,.34);
+  }
+  .final-showdown .team-btn.empty{
+    background:rgba(255,255,255,.045);
+    border-color:rgba(255,255,255,.12);
+  }
+  .final-champion-note{
+    max-width:420px;
+    margin:10px auto 0;
+    padding:8px 12px;
+    border:1px solid rgba(242,201,76,.34);
+    border-radius:999px;
+    background:rgba(242,201,76,.1);
+    color:#ffe28a;
+    font-size:14px;
+    font-weight:bold;
+    letter-spacing:1px;
   }
   .reset-btn{
     display:block;
-    margin:24px auto 0;
+    margin:10px auto 0;
     background:var(--red-card);
     color:#fff;
     border:none;
@@ -608,6 +666,14 @@
     letter-spacing:1px;
   }
   .reset-btn:hover{background:#8c1b14;}
+  .final-vs{
+    align-self:center;
+    color:#ffe28a;
+    font-size:11px;
+    font-weight:bold;
+    letter-spacing:1px;
+    text-shadow:0 0 10px rgba(242,201,76,.45);
+  }
   .vs-mini{font-size:10px;color:#7fae8f;text-align:center;margin:-6px 0 6px;}
   ::-webkit-scrollbar{height:8px;}
   ::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px;}
@@ -653,8 +719,11 @@
     .team-btn{font-size:12px;padding:5px 7px;}
     .match-id{font-size:9px;}
     .match-note{font-size:9px;}
-    .trophy-box{padding:18px 14px;}
-    .champion-name{font-size:26px;}
+    .final-zone{margin-top:-58px;}
+    .final-match-area .match.final-showdown{max-width:100%;padding:6px 8px;border-radius:14px;}
+    .final-showdown .team-btn{font-size:12px;padding:7px 6px;min-height:52px;}
+    .final-vs{font-size:10px;}
+    .final-champion-note{font-size:12px;border-radius:12px;}
     .modal-box{padding:18px 12px 14px;border-radius:16px;}
     .modal-close{width:26px;height:26px;font-size:12px;margin:-10px -4px 0 0;}
   }
@@ -714,11 +783,9 @@
 </div>
 
 <div class="final-zone" id="finalZone">
-  <div class="trophy-box" id="trophyBox">
-    <div class="label">FIFA WORLD CUP CHAMPION</div>
-    <div class="champion-placeholder" id="championDisplay">完成对阵选择，模拟你的冠军</div>
-  </div>
+  <div class="final-match-area" id="finalMatchArea"></div>
   <button class="reset-btn" onclick="resetAll()">重新模拟</button>
+  <div class="final-champion-note" id="championNote">选择决赛胜者后生成冠军</div>
 </div>
 
 </div>
@@ -1289,44 +1356,38 @@ function renderBracket(){
   const [Q1,Q2,Q3,Q4] = quadrants;
 
   // 左侧：R32(Q1+Q2八场) | R16(四场) | QF(两场)
-  const leftR32 = makeCol("1/16决赛", [...quadR16Matches(Q1), ...quadR16Matches(Q2)], true);
-  const leftR16 = makeCol("1/8决赛", [...quadR16Winners(Q1), ...quadR16Winners(Q2)]);
-  const leftQF  = makeCol("1/4决赛", [quadQF(Q1), quadQF(Q2)]);
+  const leftR32 = makeCol([...quadR16Matches(Q1), ...quadR16Matches(Q2)], true);
+  const leftR16 = makeCol([...quadR16Winners(Q1), ...quadR16Winners(Q2)]);
+  const leftQF  = makeCol([quadQF(Q1), quadQF(Q2)]);
 
   // 右侧：QF(两场) | R16(四场) | R32(Q3+Q4八场)
-  const rightQF  = makeCol("1/4决赛", [quadQF(Q3), quadQF(Q4)]);
-  const rightR16 = makeCol("1/8决赛", [...quadR16Winners(Q3), ...quadR16Winners(Q4)]);
-  const rightR32 = makeCol("1/16决赛", [...quadR16Matches(Q3), ...quadR16Matches(Q4)], true);
+  const rightQF  = makeCol([quadQF(Q3), quadQF(Q4)]);
+  const rightR16 = makeCol([...quadR16Winners(Q3), ...quadR16Winners(Q4)]);
+  const rightR32 = makeCol([...quadR16Matches(Q3), ...quadR16Matches(Q4)], true);
 
-  // 中间：半决赛 + 决赛 + 冠军
+  // 中间：半决赛；决赛单独展示在下方区域
   const sfA = buildMatch(sfids[0], getWinnerOf(Q1.qfid), getWinnerOf(Q2.qfid));
   const sfB = buildMatch(sfids[1], getWinnerOf(Q3.qfid), getWinnerOf(Q4.qfid));
   const finalMatch = buildMatch(finalId, getWinnerOf(sfids[0]), getWinnerOf(sfids[1]));
+  finalMatch.classList.add('final-showdown');
 
   const centerCol = document.createElement('div');
   centerCol.className = 'center-col';
-  const sfTitle = document.createElement('div');
-  sfTitle.className='round-title'; sfTitle.textContent='半决赛';
-  centerCol.appendChild(sfTitle);
   centerCol.appendChild(sfA);
   centerCol.appendChild(sfB);
-  const finalTitle = document.createElement('div');
-  finalTitle.className='round-title'; finalTitle.textContent='决赛';
-  centerCol.appendChild(finalTitle);
-  centerCol.appendChild(finalMatch);
 
-  // 更新底部冠军展示区
+  const finalMatchArea = document.getElementById('finalMatchArea');
+  finalMatchArea.innerHTML = '';
+  const finalTitle = document.createElement('div');
+  finalTitle.className='round-title';
+  finalTitle.textContent='决赛 · 点击选择冠军';
+  finalMatchArea.appendChild(finalTitle);
+  finalMatchArea.appendChild(finalMatch);
+
   const champ = getWinnerOf(finalId);
-  const champDisplay = document.getElementById('championDisplay');
-  const trophyBox = document.getElementById('trophyBox');
-  if(champ){
-    champDisplay.className = 'champion-name';
-    champDisplay.innerHTML = '🏆 ' + champ + teamFlagHtml(champ);
-    trophyBox.classList.add('has-champion');
-  } else {
-    champDisplay.className = 'champion-placeholder';
-    champDisplay.textContent = '完成对阵选择，模拟你的冠军';
-    trophyBox.classList.remove('has-champion');
+  const championNote = document.getElementById('championNote');
+  if(championNote){
+    championNote.innerHTML = champ ? '最终冠军：🏆 ' + champ + teamFlagHtml(champ) : '选择决赛胜者后生成冠军';
   }
 
   const row = document.createElement('div');
@@ -1340,42 +1401,33 @@ function renderBracket(){
   const mobileRounds = document.createElement('div');
   mobileRounds.className = 'mobile-rounds';
   [
-    makeMobileRound("1/16决赛", [...quadR16Matches(Q1), ...quadR16Matches(Q2), ...quadR16Matches(Q3), ...quadR16Matches(Q4)]),
-    makeMobileRound("1/8决赛", [...quadR16Winners(Q1), ...quadR16Winners(Q2), ...quadR16Winners(Q3), ...quadR16Winners(Q4)]),
-    makeMobileRound("1/4决赛", [quadQF(Q1), quadQF(Q2), quadQF(Q3), quadQF(Q4)]),
-    makeMobileRound("半决赛", [
+    makeMobileRound([...quadR16Matches(Q1), ...quadR16Matches(Q2), ...quadR16Matches(Q3), ...quadR16Matches(Q4)]),
+    makeMobileRound([...quadR16Winners(Q1), ...quadR16Winners(Q2), ...quadR16Winners(Q3), ...quadR16Winners(Q4)]),
+    makeMobileRound([quadQF(Q1), quadQF(Q2), quadQF(Q3), quadQF(Q4)]),
+    makeMobileRound([
       buildMatch(sfids[0], getWinnerOf(Q1.qfid), getWinnerOf(Q2.qfid)),
       buildMatch(sfids[1], getWinnerOf(Q3.qfid), getWinnerOf(Q4.qfid))
-    ]),
-    makeMobileRound("决赛", [buildMatch(finalId, getWinnerOf(sfids[0]), getWinnerOf(sfids[1]))])
+    ])
   ].forEach(section=>mobileRounds.appendChild(section));
   area.appendChild(mobileRounds);
 }
 
-function makeCol(title, matchEls, isR32){
+function makeCol(matchEls, isR32){
   const col = document.createElement('div');
   col.className = 'round-col' + (isR32 ? ' r32-col' : '');
-  const t = document.createElement('div');
-  t.className='round-title';
-  t.textContent = title;
   const list = document.createElement('div');
   list.className = 'round-match-list';
-  col.appendChild(t);
   matchEls.forEach(m=>list.appendChild(m));
   col.appendChild(list);
   return col;
 }
 
-function makeMobileRound(title, matchEls){
+function makeMobileRound(matchEls){
   const section = document.createElement('section');
   section.className = 'mobile-round-section';
-  const heading = document.createElement('div');
-  heading.className = 'round-title';
-  heading.textContent = title;
   const list = document.createElement('div');
   list.className = 'mobile-match-list';
   matchEls.forEach(match=>list.appendChild(match));
-  section.appendChild(heading);
   section.appendChild(list);
   return section;
 }
@@ -1446,7 +1498,7 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
   const matchDate = matchDateOf(matchId);
   const matchStage = matchStageOf(matchId);
 
-  if(matchDate){
+  if(matchDate && matchId !== finalId){
     const date = document.createElement('div');
     date.className = 'match-date';
     date.innerHTML = `<span class="date-main">${formatMatchDate(matchDate)}</span><span class="date-sub">· ${matchStage}</span>`;
@@ -1454,6 +1506,12 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
   }
 
   [['a',nameA,labelA,statusA],['b',nameB,labelB,statusB]].forEach(([side,name,label,status])=>{
+    if(matchId === finalId && side === 'b'){
+      const vs = document.createElement('div');
+      vs.className = 'final-vs';
+      vs.textContent = 'VS';
+      wrap.appendChild(vs);
+    }
     const btn = document.createElement('button');
     const isWinner = winners[matchId] === name && name;
     btn.className = 'team-btn' + (isWinner?' winner':'') + (!name?' empty':'');
