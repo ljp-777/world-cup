@@ -212,6 +212,8 @@
   .rules-table th,.rules-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center;white-space:nowrap;}
   .rules-table th{position:sticky;top:0;background:#123321;color:#ffe28a;z-index:1;}
   .rules-table tr.current{background:rgba(242,201,76,.14);color:#ffe28a;font-weight:bold;}
+  .rule-jump-btn{border:none;background:transparent;color:#ffe28a;font:inherit;font-weight:bold;text-decoration:underline;cursor:pointer;padding:0;}
+  .rule-jump-btn:hover{color:var(--gold);}
   .rules-empty{padding:18px;text-align:center;color:#ffb0a8;font-size:13px;}
 
   .group-grid{
@@ -399,6 +401,29 @@
     color:#9fc7ad;
     font-size:12px;
     letter-spacing:1px;
+  }
+  .bracket-placeholder{
+    min-height:240px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:28px;
+    border:1px dashed rgba(242,201,76,.36);
+    border-radius:18px;
+    background:rgba(10,38,26,.58);
+    color:#d5eadc;
+    text-align:center;
+    padding:28px 18px;
+  }
+  .bracket-placeholder .ball{font-size:34px;line-height:1;}
+  .bracket-placeholder.loading .ball{animation:ballSpin 1.1s linear infinite;}
+  .bracket-placeholder .title{color:var(--gold);font-size:16px;font-weight:bold;letter-spacing:1px;}
+  .bracket-placeholder .desc{max-width:520px;font-size:13px;line-height:1.6;color:#9fc7ad;}
+  @keyframes ballSpin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
   }
   .round-col{
     min-width:200px;
@@ -644,7 +669,13 @@
   </div>
 </div>
 
-<div id="bracketArea"></div>
+<div id="bracketArea">
+  <div class="bracket-placeholder loading" role="status" aria-live="polite">
+    <div class="ball">⚽</div>
+    <div class="title">对阵图准备中</div>
+    <div class="desc">正在加载小组数据与第三名对阵规则，加载完成后会自动生成 1/16 决赛到决赛的完整对阵图。</div>
+  </div>
+</div>
 
 <div class="final-zone" id="finalZone">
   <div class="trophy-box" id="trophyBox">
@@ -1167,10 +1198,13 @@ function renderThirdPlaceRules(){
   const rows = thirdPlaceRules.map(rule=>{
     const isCurrent = currentRule && rule.id === currentRule.id;
     const cells = slotKeys.map(key=>`<td>${rule.slots?.[key] || '-'}</td>`).join('');
-    return `<tr class="${isCurrent?'current':''}"><td>${isCurrent?'当前规则 · ':''}#${rule.id}</td><td>${thirdRuleKey(rule).split('').join('、')}</td>${cells}</tr>`;
+    return `<tr class="${isCurrent?'current':''}" id="rule-row-${rule.id}"><td>${isCurrent?'当前规则 · ':''}#${rule.id}</td><td>${thirdRuleKey(rule).split('').join('、')}</td>${cells}</tr>`;
   }).join('');
+  const currentRuleText = currentRule
+    ? `<button class="rule-jump-btn" type="button" onclick="scrollToCurrentRule()">已匹配规则 #${currentRule.id}</button>。`
+    : '请恰好选择8个第三名后查看当前匹配规则。';
   content.innerHTML = `
-    <p class="rules-summary">当前已选第三名小组：<strong>${selectedText}</strong>。${currentRule ? `已匹配规则 #${currentRule.id}。` : '请恰好选择8个第三名后查看当前匹配规则。'}</p>
+    <p class="rules-summary">当前已选第三名小组：<strong>${selectedText}</strong>。${currentRuleText}</p>
     <div class="rules-table-wrap">
       <table class="rules-table">
         <thead><tr><th>规则</th><th>第三名组合</th>${slotKeys.map(key=>`<th>${key} 对阵</th>`).join('')}</tr></thead>
@@ -1178,6 +1212,12 @@ function renderThirdPlaceRules(){
       </table>
     </div>
   `;
+}
+
+function scrollToCurrentRule(){
+  const row = document.querySelector('.rules-table tr.current');
+  if(!row) return;
+  row.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 function getWinnerOf(matchId){ return winners[matchId] || null; }
@@ -1341,7 +1381,7 @@ function buildMatch(matchId, nameA, nameB, labelA, labelB, statusA, statusB){
       const realName = typeof name==='object' ? null : name;
       const labelHtml = label ? `<span class="slot-label">${label}</span>` : '';
       const statusHtml = status ? `<span class="slot-status ${status.cls}">${status.text}</span>` : '';
-      const hintHtml = isWinner ? '' : '<span class="click-hint">点这里晋级 ›</span>';
+      const hintHtml = isWinner ? '' : '<span class="click-hint">晋级 ›</span>';
       btn.innerHTML = `<span>${realName||'待定'}${realName ? teamFlagHtml(realName) : ''}${labelHtml}${statusHtml}</span>` + (isWinner?'<span class="tag">✓晋级</span>':hintHtml);
       btn.addEventListener('click',()=>{
         if(!name) return;
@@ -1463,6 +1503,13 @@ async function init(){
     recomputeAndRender();
   } catch(error){
     console.error("Error fetching groups:", error);
+    document.getElementById('bracketArea').innerHTML = `
+      <div class="bracket-placeholder" role="alert">
+        <div class="ball">⚠️</div>
+        <div class="title">对阵图暂时无法生成</div>
+        <div class="desc">小组赛数据加载失败，请检查 Token 或网络后刷新页面。</div>
+      </div>
+    `;
     alert('小组赛数据加载失败，请检查 Token 或网络后刷新页面');
   }
 }
