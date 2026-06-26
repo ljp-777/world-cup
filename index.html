@@ -881,12 +881,13 @@ function qualificationBadge(g, team, rank){
 function getThirdCandidates(){
   return Object.keys(groups).map(g=>{
     const t = third(g);
-    return { group:g, team:t, pts:ptsOf(g,t), gd:goalDiffOf(g,t) };
+    return { group:g, team:t, pts:ptsOf(g,t), gf:goalsForOf(g,t) };
   }).filter(c=>clinchStatus(c.group, c.team)!=='eliminated')
-    .sort((a,b)=>b.pts-a.pts || b.gd-a.gd);
+    .sort((a,b)=>b.pts-a.pts || b.gf-a.gf);
 }
 let selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
 const SETTINGS_CACHE_KEY = 'worldCupGroupSettings';
+const SETTINGS_CACHE_VERSION = 'thirds-points-goals-v1';
 
 function loadSettingsCache(){
   try{
@@ -905,7 +906,7 @@ function loadSettingsCache(){
     const cachedThirds = Array.isArray(cache.selectedThirds)
       ? cache.selectedThirds.filter(g=>validThirdGroups.has(g))
       : [];
-    if(cachedThirds.length === 8){
+    if(cache.version === SETTINGS_CACHE_VERSION && cachedThirds.length === 8){
       selectedThirds = new Set(cachedThirds);
     } else {
       selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
@@ -918,6 +919,7 @@ function loadSettingsCache(){
 function saveSettingsCache(){
   try{
     localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
+      version: SETTINGS_CACHE_VERSION,
       groupPicks,
       selectedThirds:[...selectedThirds]
     }));
