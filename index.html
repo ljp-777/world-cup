@@ -92,6 +92,13 @@
     margin-bottom:0;
     letter-spacing:1px;
   }
+  .quick-guide{
+    max-width:760px;
+    margin-top:10px;
+    color:#ffe28a;
+    font-size:13px;
+    line-height:1.6;
+  }
   .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;}
   .ghost-btn,.settings-btn{
     border:none;
@@ -107,54 +114,12 @@
   .ghost-btn:hover,.settings-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.25);}
   button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid rgba(86,214,255,.85);outline-offset:3px;}
   .toolbar{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 0 24px;}
-  .steps-guide{
-    display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 20px;
-    padding:14px 20px;
-    background:rgba(15,50,34,.85);
-    border:1px solid rgba(242,201,76,.35);
-    border-radius:12px;
-  }
-  .step-item{
-    display:flex;align-items:center;gap:7px;font-size:14px;color:var(--chalk);font-weight:bold;
-  }
-  .step-num{
-    display:inline-flex;align-items:center;justify-content:center;
-    width:26px;height:26px;border-radius:50%;
-    background:var(--gold);color:#23260a;font-weight:bold;font-size:13px;
-    flex-shrink:0;
-  }
-  .step-item.done .step-num{background:#5a8a66;color:#fff;}
-  .step-arrow{color:rgba(242,201,76,.4);font-size:18px;font-weight:bold;}
-  .next-action{
-    max-width:700px;margin:0 auto 18px;text-align:center;
-    background:rgba(242,201,76,.12);
-    border:1px solid rgba(242,201,76,.4);
-    border-radius:10px;
-    padding:10px 16px;
-    font-size:13px;
-    color:#ffe28a;
-    font-weight:bold;
-    letter-spacing:.5px;
-  }
   .settings-btn.pulse{
     animation:btnPulse 1.6s ease-in-out infinite;
   }
   @keyframes btnPulse{
     0%,100%{box-shadow:0 10px 30px rgba(242,201,76,.22);}
     50%{box-shadow:0 10px 30px rgba(242,201,76,.6),0 0 0 6px rgba(242,201,76,.12);}
-  }
-  .progress-bar-wrap{
-    max-width:600px;margin:0 auto 20px;text-align:center;
-  }
-  .progress-label{font-size:14px;color:var(--chalk);margin-bottom:8px;letter-spacing:1px;font-weight:bold;}
-  .progress-bar-bg{
-    height:12px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden;
-    border:1px solid rgba(242,201,76,.2);
-  }
-  .progress-bar-fill{
-    height:100%;background:linear-gradient(90deg,var(--gold),#ffe28a);border-radius:6px;
-    transition:width .4s ease;
-    box-shadow:0 0 8px rgba(242,201,76,.3);
   }
   .stage{
     max-width:100%;
@@ -177,6 +142,18 @@
     align-items:center;
   }
   .hint{font-size:11px;color:#9fc7ad;font-weight:normal;}
+  .inline-rule-btn{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(242,201,76,.32);
+    color:#ffe28a;
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:11px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-left:8px;
+  }
+  .inline-rule-btn:hover{background:rgba(242,201,76,.14);}
   .settings-btn{background:linear-gradient(135deg,var(--gold),#ffe28a);color:#23260a;box-shadow:0 10px 30px rgba(242,201,76,.22);}
   .modal-overlay{
     position:fixed;
@@ -397,6 +374,13 @@
     align-items:stretch;
     justify-content:center;
   }
+  .bracket-guide{
+    margin:0 0 10px;
+    text-align:center;
+    color:#9fc7ad;
+    font-size:12px;
+    letter-spacing:1px;
+  }
   .round-col{
     min-width:200px;
     display:flex;
@@ -556,6 +540,7 @@
     body::before{display:none;}
     .hero{padding:20px;border-radius:18px;}
     h1,.subtitle{text-align:center;}
+    .quick-guide{text-align:center;margin-left:auto;margin-right:auto;}
     .eyebrow{margin:0 auto;}
     .hero-actions{justify-content:center;}
   }
@@ -566,10 +551,6 @@
     .hero{padding:14px 12px;border-radius:14px;}
     .hero-actions{gap:8px;}
     .ghost-btn,.settings-btn{padding:10px 14px;font-size:12px;}
-    .steps-guide{gap:6px;padding:10px 12px;}
-    .step-item{font-size:12px;gap:4px;}
-    .step-num{width:22px;height:22px;font-size:11px;}
-    .step-arrow{font-size:14px;}
     .stage{padding:12px 10px;border-radius:12px;}
     .group-grid{grid-template-columns:1fr;gap:8px;}
     .group-head,.gteam-row{grid-template-columns:24px minmax(0,1fr) 26px 30px 30px 82px;gap:4px;}
@@ -598,33 +579,14 @@
       <div class="eyebrow">🏟️ FIFA WORLD CUP 2026 · BRACKET LAB</div>
       <h1>2026 FIFA <span>世界杯</span><br>夺冠预测器</h1>
       <div class="subtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步预测你的冠军！</div>
+      <div class="quick-guide">操作顺序：先设置小组名次和最佳第三名，再在下方对阵图中点击球队选择晋级方。</div>
       <div class="hero-actions">
-        <button class="settings-btn" onclick="openModal()">⚙ 设置小组名次与第三名晋级</button>
-        <button class="ghost-btn" onclick="openRulesModal()">📋 查看对阵规则</button>
-        <a class="ghost-btn" href="#bracketArea">查看淘汰赛对阵 ↓</a>
+        <button class="settings-btn" onclick="openModal()">① 设置小组名次与第三名晋级</button>
+        <a class="ghost-btn" href="#bracketArea">② 去对阵图选择晋级 ↓</a>
       </div>
     </div>
   </div>
 </section>
-
-
-<div class="steps-guide" id="stepsGuide">
-  <div class="step-item" id="step1"><span class="step-num">1</span>设置小组1/2名</div>
-  <span class="step-arrow">›</span>
-  <div class="step-item" id="step2"><span class="step-num">2</span>选择8个最佳第三名</div>
-  <span class="step-arrow">›</span>
-  <div class="step-item" id="step3"><span class="step-num">3</span>点击对阵图选择晋级球队</div>
-  <span class="step-arrow">›</span>
-  <div class="step-item" id="step4"><span class="step-num">4</span>得出冠军预测！</div>
-</div>
-
-<div class="next-action" id="nextAction"></div>
-
-<div class="progress-bar-wrap">
-  <div class="progress-label" id="groupProgressLabel">小组赛进行中：— / — 场</div>
-  <div class="progress-label" id="progressLabel">淘汰赛预测进度：0 / 31</div>
-  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
-</div>
 
 <div id="modalOverlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
   <div class="modal-box">
@@ -635,7 +597,7 @@
     </div>
 
     <div class="stage">
-      <h2>第二步：选择8个最佳小组第三名 <span class="hint" id="thirdHint"></span></h2>
+      <h2>第二步：选择8个最佳小组第三名 <span><span class="hint" id="thirdHint"></span><button class="inline-rule-btn" onclick="openRulesModal()">查看对阵规则</button></span></h2>
       <div class="third-grid" id="thirdGrid"></div>
     </div>
     <button class="modal-done-btn" id="modalDoneBtn" onclick="tryCloseModal()">完成设置，查看对阵</button>
@@ -1155,17 +1117,6 @@ function renderGroupGrid(){
     card.appendChild(table);
     grid.appendChild(card);
   });
-  updateGroupProgressLabel();
-}
-function updateGroupProgressLabel(){
-  const { played, total } = overallGroupProgress();
-  const label = document.getElementById('groupProgressLabel');
-  if(label){
-    const done = played>=total;
-    label.textContent = done
-      ? `小组赛已全部结束：${played} / ${total} 场`
-      : `小组赛进行中：已赛 ${played} / ${total} 场`;
-  }
 }
 function onGroupPicksChanged(){
   // 小组名次变了，第三名候选池也变了：重新选出默认最佳8个第三名
@@ -1247,6 +1198,11 @@ function renderBracket(){
   thirdAssignmentMap = assignThirds();
   const area = document.getElementById('bracketArea');
   area.innerHTML = '';
+
+  const guide = document.createElement('div');
+  guide.className = 'bracket-guide';
+  guide.textContent = '对阵图操作：从 1/16 决赛开始，点击每场比赛中的球队选择晋级方。';
+  area.appendChild(guide);
 
   // 计算每个象限的 R16 / QF 胜者
   function quadR16Matches(q){
@@ -1434,13 +1390,7 @@ function updateProgress(){
     ...sfids,
     finalId
   ];
-  const total = allMatchIds.length;
   const decided = allMatchIds.filter(id=>winners[id]).length;
-  const pct = Math.round(decided/total*100);
-  const fill = document.getElementById('progressFill');
-  const label = document.getElementById('progressLabel');
-  if(fill) fill.style.width = pct+'%';
-  if(label) label.textContent = `淘汰赛预测进度：${decided} / ${total}`;
 
   // 更新步骤状态
   const s1 = document.getElementById('step1');
@@ -1457,24 +1407,6 @@ function updateProgress(){
   // 步骤4: 选出了冠军
   const champion = !!getWinnerOf(finalId);
   if(s4) s4.classList.toggle('done', champion);
-
-  // 动态操作指引 + 设置按钮呼吸提示
-  const nextAction = document.getElementById('nextAction');
-  const settingsBtns = document.querySelectorAll('.settings-btn');
-  let guideText = '';
-  let pulseSettings = false;
-  if(!thirdsDone){
-    guideText = '👉 第一步：点击上方「⚙ 设置小组名次与第三名晋级」，确认各组1/2名，并勾选8个最佳第三名';
-    pulseSettings = true;
-  } else if(champion){
-    guideText = `🏆 预测完成！冠军是 ${getWinnerOf(finalId)}，可点击「重新预测」换一种结果`;
-  } else if(decided === 0){
-    guideText = '👉 第二步：在下方对阵图中，点击你认为会获胜的球队名称（按钮上写着"点这里晋级"），让它晋级下一轮';
-  } else {
-    guideText = `👉 继续点击对阵图中的球队，完成剩余 ${total - decided} 场比赛的晋级选择，直到选出冠军`;
-  }
-  if(nextAction) nextAction.textContent = guideText;
-  settingsBtns.forEach(b=>b.classList.toggle('pulse', pulseSettings));
 }
 
 function resetAll(){
@@ -1517,8 +1449,7 @@ async function init(){
     recomputeAndRender();
   } catch(error){
     console.error("Error fetching groups:", error);
-    const nextAction = document.getElementById('nextAction');
-    if(nextAction) nextAction.textContent = '小组赛数据加载失败，请检查 Token 或网络后刷新页面';
+    alert('小组赛数据加载失败，请检查 Token 或网络后刷新页面');
   }
 }
 
