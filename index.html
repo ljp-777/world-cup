@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="2026 FIFA 世界杯夺冠预测器：设置小组名次、选择最佳第三名，并点击淘汰赛对阵预测冠军。">
-<title>2026世界杯 夺冠预测</title>
+<meta name="description" content="2026 FIFA 世界杯夺冠模拟器：设置小组名次、选择最佳第三名，并点击淘汰赛对阵模拟冠军。">
+<title>2026世界杯 夺冠模拟</title>
 <style>
   :root{
     --pitch:#071a12;
@@ -630,8 +630,8 @@
   <div class="hero-top">
     <div>
       <div class="eyebrow">🏟️ FIFA WORLD CUP 2026 · BRACKET LAB</div>
-      <h1>2026 FIFA <span>世界杯</span><br>夺冠预测器</h1>
-      <div class="subtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步预测你的冠军！</div>
+      <h1>2026 FIFA <span>世界杯</span><br>夺冠模拟器</h1>
+      <div class="subtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步模拟你的冠军！</div>
       <div class="quick-guide">操作顺序：先设置小组名次和最佳第三名，再在下方对阵图中点击球队选择晋级方。</div>
       <div class="hero-actions">
         <button class="settings-btn" onclick="openModal()">① 设置小组名次与第三名晋级</button>
@@ -680,9 +680,9 @@
 <div class="final-zone" id="finalZone">
   <div class="trophy-box" id="trophyBox">
     <div class="label">FIFA WORLD CUP CHAMPION</div>
-    <div class="champion-placeholder" id="championDisplay">完成对阵选择，预测你的冠军</div>
+    <div class="champion-placeholder" id="championDisplay">完成对阵选择，模拟你的冠军</div>
   </div>
-  <button class="reset-btn" onclick="resetAll()">重新预测</button>
+  <button class="reset-btn" onclick="resetAll()">重新模拟</button>
 </div>
 
 </div>
@@ -908,7 +908,7 @@ function qualificationBadge(g, team, rank){
     const groupDone = isGroupDone(g);
     if(groupDone) return { cls:'locked', text:'确定' };
     if(ptsOf(g, team) >= 6) return { cls:'clinched', text:'已晋级' };
-    return { cls:'pred', text:'预测' };
+    return { cls:'pred', text:'模拟' };
   }
   if(rank === 4 && isGroupDone(g)){
     return { cls:'elim', text:'淘汰' };
@@ -1289,7 +1289,7 @@ function renderBracket(){
     trophyBox.classList.add('has-champion');
   } else {
     champDisplay.className = 'champion-placeholder';
-    champDisplay.textContent = '完成对阵选择，预测你的冠军';
+    champDisplay.textContent = '完成对阵选择，模拟你的冠军';
     trophyBox.classList.remove('has-champion');
   }
 
@@ -1360,7 +1360,7 @@ function slotStatus(slot){
     const locked = progress.played >= progress.total;
     return locked
       ? { cls:'locked', text:'确定' }
-      : { cls:'pred', text:'预测' };
+      : { cls:'pred', text:'模拟' };
   }
   return null;
 }
