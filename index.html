@@ -1423,6 +1423,14 @@ function matchTeamB(matchId, fallback){
   return apiMatchTeamsOf(matchId)?.away || fallback || null;
 }
 
+function matchTeamAFromWinner(matchId, fallback){
+  return fallback || apiMatchTeamsOf(matchId)?.home || null;
+}
+
+function matchTeamBFromWinner(matchId, fallback){
+  return fallback || apiMatchTeamsOf(matchId)?.away || null;
+}
+
 function renderBracket(){
   thirdAssignmentMap = assignThirds();
   const area = document.getElementById('bracketArea');
@@ -1443,12 +1451,12 @@ function renderBracket(){
   }
   function quadR16Winners(q){
     return [
-      buildMatch(q.r16ids[0], matchTeamA(q.r16ids[0], getWinnerOf(q.r32[0].id)), matchTeamB(q.r16ids[0], getWinnerOf(q.r32[1].id))),
-      buildMatch(q.r16ids[1], matchTeamA(q.r16ids[1], getWinnerOf(q.r32[2].id)), matchTeamB(q.r16ids[1], getWinnerOf(q.r32[3].id))),
+      buildMatch(q.r16ids[0], matchTeamAFromWinner(q.r16ids[0], getWinnerOf(q.r32[0].id)), matchTeamBFromWinner(q.r16ids[0], getWinnerOf(q.r32[1].id))),
+      buildMatch(q.r16ids[1], matchTeamAFromWinner(q.r16ids[1], getWinnerOf(q.r32[2].id)), matchTeamBFromWinner(q.r16ids[1], getWinnerOf(q.r32[3].id))),
     ];
   }
   function quadQF(q){
-    return buildMatch(q.qfid, matchTeamA(q.qfid, getWinnerOf(q.r16ids[0])), matchTeamB(q.qfid, getWinnerOf(q.r16ids[1])));
+    return buildMatch(q.qfid, matchTeamAFromWinner(q.qfid, getWinnerOf(q.r16ids[0])), matchTeamBFromWinner(q.qfid, getWinnerOf(q.r16ids[1])));
   }
 
   const [Q1,Q2,Q3,Q4] = quadrants;
@@ -1464,9 +1472,9 @@ function renderBracket(){
   const rightR32 = makeCol([...quadR16Matches(Q3), ...quadR16Matches(Q4)], true);
 
   // 中间：半决赛；决赛单独展示在下方区域
-  const sfA = buildMatch(sfids[0], matchTeamA(sfids[0], getWinnerOf(Q1.qfid)), matchTeamB(sfids[0], getWinnerOf(Q2.qfid)));
-  const sfB = buildMatch(sfids[1], matchTeamA(sfids[1], getWinnerOf(Q3.qfid)), matchTeamB(sfids[1], getWinnerOf(Q4.qfid)));
-  const finalMatch = buildMatch(finalId, matchTeamA(finalId, getWinnerOf(sfids[0])), matchTeamB(finalId, getWinnerOf(sfids[1])));
+  const sfA = buildMatch(sfids[0], matchTeamAFromWinner(sfids[0], getWinnerOf(Q1.qfid)), matchTeamBFromWinner(sfids[0], getWinnerOf(Q2.qfid)));
+  const sfB = buildMatch(sfids[1], matchTeamAFromWinner(sfids[1], getWinnerOf(Q3.qfid)), matchTeamBFromWinner(sfids[1], getWinnerOf(Q4.qfid)));
+  const finalMatch = buildMatch(finalId, matchTeamAFromWinner(finalId, getWinnerOf(sfids[0])), matchTeamBFromWinner(finalId, getWinnerOf(sfids[1])));
   finalMatch.classList.add('final-showdown');
 
   const centerCol = document.createElement('div');
@@ -1503,8 +1511,8 @@ function renderBracket(){
     makeMobileRound([...quadR16Winners(Q1), ...quadR16Winners(Q2), ...quadR16Winners(Q3), ...quadR16Winners(Q4)]),
     makeMobileRound([quadQF(Q1), quadQF(Q2), quadQF(Q3), quadQF(Q4)]),
     makeMobileRound([
-      buildMatch(sfids[0], matchTeamA(sfids[0], getWinnerOf(Q1.qfid)), matchTeamB(sfids[0], getWinnerOf(Q2.qfid))),
-      buildMatch(sfids[1], matchTeamA(sfids[1], getWinnerOf(Q3.qfid)), matchTeamB(sfids[1], getWinnerOf(Q4.qfid)))
+      buildMatch(sfids[0], matchTeamAFromWinner(sfids[0], getWinnerOf(Q1.qfid)), matchTeamBFromWinner(sfids[0], getWinnerOf(Q2.qfid))),
+      buildMatch(sfids[1], matchTeamAFromWinner(sfids[1], getWinnerOf(Q3.qfid)), matchTeamBFromWinner(sfids[1], getWinnerOf(Q4.qfid)))
     ])
   ].forEach(section=>mobileRounds.appendChild(section));
   area.appendChild(mobileRounds);
