@@ -736,11 +736,11 @@
     <div>
       <div class="eyebrow">🏟️ FIFA WORLD CUP 2026 · BRACKET LAB</div>
       <h1>2026 FIFA <span>世界杯</span><br>夺冠模拟器</h1>
-      <div class="subtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步模拟你的冠军！</div>
-      <div class="quick-guide">操作顺序：先设置小组名次和最佳第三名，再在下方对阵图中点击球队选择晋级方。</div>
+      <div class="subtitle" id="heroSubtitle">点击球队即可选择晋级方，设置小组名次后自动刷新对阵。从小组赛到决赛，一步步模拟你的冠军！</div>
+      <div class="quick-guide" id="quickGuide">操作顺序：先设置小组名次和最佳第三名，再在下方对阵图中点击球队选择晋级方。</div>
       <div class="hero-actions">
-        <button class="settings-btn" onclick="openModal()">① 设置小组名次与第三名晋级</button>
-        <a class="ghost-btn" href="#bracketArea">② 去对阵图选择晋级 ↓</a>
+        <button class="settings-btn" id="settingsEntryBtn" onclick="openModal()">① 设置小组名次与第三名晋级</button>
+        <a class="ghost-btn" id="bracketEntryLink" href="#bracketArea">② 去对阵图选择晋级 ↓</a>
       </div>
     </div>
   </div>
@@ -1053,6 +1053,25 @@ function overallGroupProgress(){
   });
   return { played, total };
 }
+
+function isGroupStageComplete(){
+  const progress = overallGroupProgress();
+  return progress.total > 0 && progress.played >= progress.total;
+}
+
+function updateHeroForTournamentState(){
+  if(!isGroupStageComplete()) return;
+
+  const subtitle = document.getElementById('heroSubtitle');
+  const quickGuide = document.getElementById('quickGuide');
+  const settingsBtn = document.getElementById('settingsEntryBtn');
+  const bracketLink = document.getElementById('bracketEntryLink');
+
+  if(subtitle) subtitle.textContent = '小组赛已结束，淘汰赛对阵已按接口返回数据初始化。点击球队即可继续模拟晋级方和最终冠军。';
+  if(quickGuide) quickGuide.textContent = '从 1/16 决赛开始，点击每场比赛中的球队选择晋级方。';
+  if(settingsBtn) settingsBtn.style.display = 'none';
+  if(bracketLink) bracketLink.textContent = '查看淘汰赛对阵 ↓';
+}
 /* 数学晋级判定（基于当前积分与各组剩余场次，未考虑净胜球，仅供最佳第三名候选过滤） */
 function remainingRounds(g, team){
   return GROUP_TOTAL_ROUNDS - gamesOf(g, team);
@@ -1116,6 +1135,8 @@ function groupRank(g, team){
   return 4;
 }
 function qualificationBadge(g, team, rank){
+  if(isGroupStageComplete()) return null;
+
   if(rank <= 2){
     // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
     const groupDone = isGroupDone(g);
@@ -1579,11 +1600,8 @@ function slotStatus(slot){
   if(slot.type==='3set'){
     const letter = thirdAssignmentMap.get(slot);
     if(!letter) return null;
-    const progress = overallGroupProgress();
-    const locked = progress.played >= progress.total;
-    return locked
-      ? { cls:'locked', text:'确定' }
-      : { cls:'pred', text:'模拟' };
+    if(isGroupStageComplete()) return null;
+    return { cls:'pred', text:'模拟' };
   }
   return null;
 }
@@ -1807,6 +1825,7 @@ async function init(){
     initGroupPicks();
     selectedThirds = new Set(getThirdCandidates().slice(0,8).map(c=>c.group));
     lockCompletedGroupPicks();
+    updateHeroForTournamentState();
     renderGroupGrid();
     renderThirdGrid();
     recomputeAndRender();
