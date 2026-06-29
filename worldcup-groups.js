@@ -1,6 +1,7 @@
 const WORLD_CUP_API_BASE_URL = 'https://worldcup26.ir';
 const WORLD_CUP_GROUPS_API_URL = `${WORLD_CUP_API_BASE_URL}/get/groups`;
 const WORLD_CUP_TEAMS_API_URL = `${WORLD_CUP_API_BASE_URL}/get/teams`;
+const WORLD_CUP_GAMES_API_URL = `${WORLD_CUP_API_BASE_URL}/get/games`;
 
 async function requestWorldCupJson(url, token){
   const res = await fetch(url, {
@@ -43,6 +44,12 @@ async function getTeams(token){
   return normalizeWorldCupList(data, 'teams');
 }
 
+async function getGames(token){
+  const data = await requestWorldCupJson(WORLD_CUP_GAMES_API_URL, token);
+
+  return normalizeWorldCupList(data, 'games');
+}
+
 async function getGroups(token){
   const data = await requestWorldCupJson(WORLD_CUP_GROUPS_API_URL, token);
   const groups = normalizeWorldCupList(data, 'groups');
@@ -67,5 +74,7 @@ async function getGroups(token){
 window.WORLD_CUP_API_BASE_URL = WORLD_CUP_API_BASE_URL;
 window.WORLD_CUP_GROUPS_API_URL = WORLD_CUP_GROUPS_API_URL;
 window.WORLD_CUP_TEAMS_API_URL = WORLD_CUP_TEAMS_API_URL;
+window.WORLD_CUP_GAMES_API_URL = WORLD_CUP_GAMES_API_URL;
 window.getTeams = getTeams;
+window.getGames = getGames;
 window.getGroups = getGroups;

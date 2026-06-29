@@ -798,6 +798,9 @@ let goalDiffs = {};
 let goalsFor = {};
 let games = {};
 let teamFlags = {};
+let groupApiRanks = {};
+let apiKnockoutTeams = {};
+let apiKnockoutWinners = {};
 const flagPreloadCache = new Map();
 const GROUP_TOTAL_ROUNDS = 3;
 
@@ -822,6 +825,11 @@ function normalizeTeamNameKey(name){
 
 function teamNameOf(team){
   const name = team.name_cn || team.name_zh || team.name_en || team.name || team.team_id || '未知球队';
+  return TEAM_NAME_ZH[normalizeTeamNameKey(name)] || name;
+}
+
+function apiTeamNameOf(name){
+  if(!name) return '';
   return TEAM_NAME_ZH[normalizeTeamNameKey(name)] || name;
 }
 
@@ -891,14 +899,17 @@ function applyGroupApiData(apiGroups){
   goalsFor = {};
   games = {};
   teamFlags = {};
+  groupApiRanks = {};
 
   apiGroups.forEach(groupData => {
     const groupCode = groupData.group;
     const teams = groupData.teams || [];
+    groupApiRanks[groupCode] = {};
 
-    groups[groupCode] = teams.map(team => {
+    groups[groupCode] = teams.map((team, index) => {
       const teamName = teamNameOf(team);
       teamFlags[teamName] = teamFlagOf(team);
+      groupApiRanks[groupCode][teamName] = index;
       return teamName;
     });
     points[groupCode] = teams.map(pointsOfTeam);
@@ -906,6 +917,74 @@ function applyGroupApiData(apiGroups){
     goalsFor[groupCode] = teams.map(goalsForOfTeam);
     games[groupCode] = teams.map(gamesOfTeam);
   });
+}
+
+function isFinishedGame(game){
+  return String(game.finished || '').toUpperCase() === 'TRUE' || String(game.time_elapsed || '').toLowerCase() === 'finished';
+}
+
+function scoreOf(value){
+  return Number(value ?? 0);
+}
+
+function sameTeamName(a, b){
+  return normalizeTeamNameKey(String(a || '').replace(/\s*\(第3名\)$/, '')) === normalizeTeamNameKey(String(b || '').replace(/\s*\(第3名\)$/, ''));
+}
+
+function inferApiWinnersFromNextRounds(){
+  Object.entries(directDependents).forEach(([parentId, childIds])=>{
+    if(apiKnockoutWinners[parentId]) return;
+    const parentTeams = apiKnockoutTeams[parentId];
+    if(!parentTeams) return;
+
+    const parentCandidates = [parentTeams.home, parentTeams.away].filter(Boolean);
+    if(!parentCandidates.length) return;
+
+    for(const childId of childIds){
+      const childTeams = apiKnockoutTeams[childId];
+      if(!childTeams) continue;
+
+      const advancedTeam = parentCandidates.find(team =>
+        sameTeamName(team, childTeams.home) || sameTeamName(team, childTeams.away)
+      );
+      if(advancedTeam){
+        apiKnockoutWinners[parentId] = advancedTeam;
+        return;
+      }
+    }
+  });
+}
+
+function applyGamesApiData(apiGames){
+  apiKnockoutTeams = {};
+  apiKnockoutWinners = {};
+  winners = {};
+
+  apiGames
+    .filter(game => game.type && game.type !== 'group')
+    .forEach(game => {
+      const matchId = `M${game.id}`;
+      const homeTeam = apiTeamNameOf(game.home_team_name_en);
+      const awayTeam = apiTeamNameOf(game.away_team_name_en);
+      const hasHomeTeam = homeTeam && String(game.home_team_id || '') !== '0';
+      const hasAwayTeam = awayTeam && String(game.away_team_id || '') !== '0';
+
+      if(hasHomeTeam || hasAwayTeam){
+        apiKnockoutTeams[matchId] = {
+          home: hasHomeTeam ? homeTeam : '',
+          away: hasAwayTeam ? awayTeam : ''
+        };
+      }
+
+      if(!isFinishedGame(game) || !hasHomeTeam || !hasAwayTeam) return;
+      const homeScore = scoreOf(game.home_score);
+      const awayScore = scoreOf(game.away_score);
+      if(homeScore === awayScore) return;
+      apiKnockoutWinners[matchId] = homeScore > awayScore ? homeTeam : awayTeam;
+    });
+
+  inferApiWinnersFromNextRounds();
+  winners = { ...apiKnockoutWinners };
 }
 function ptsOf(g, team){
   const idx = groups[g].indexOf(team);
@@ -923,6 +1002,11 @@ function formatGoalDiff(n){
   return n > 0 ? `+${n}` : `${n}`;
 }
 function compareTeamsInGroup(g, a, b){
+  const apiRankA = groupApiRanks[g]?.[a];
+  const apiRankB = groupApiRanks[g]?.[b];
+  if(apiRankA !== undefined && apiRankB !== undefined && apiRankA !== apiRankB){
+    return apiRankA - apiRankB;
+  }
   return ptsOf(g,b)-ptsOf(g,a) || goalDiffOf(g,b)-goalDiffOf(g,a);
 }
 function gamesOf(g, team){
@@ -970,11 +1054,14 @@ function clinchStatus(g, team){
 /* ---------- 小组1/2名状态（默认=当前排名，可由用户修改） ---------- */
 let groupPicks = {}; // g -> {first:teamName, second:teamName}
 
+function defaultGroupPick(g){
+  return { first: groups[g]?.[0], second: groups[g]?.[1] };
+}
+
 function initGroupPicks(){
   groupPicks = {};
   Object.keys(groups).forEach(g=>{
-    const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
-    groupPicks[g] = { first: sorted[0], second: sorted[1] };
+    groupPicks[g] = defaultGroupPick(g);
   });
 }
 
@@ -985,8 +1072,7 @@ function isGroupDone(g){
 function lockCompletedGroupPicks(){
   Object.keys(groups).forEach(g=>{
     if(!isGroupDone(g)) return;
-    const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
-    groupPicks[g] = { first: sorted[0], second: sorted[1] };
+    groupPicks[g] = defaultGroupPick(g);
   });
 }
 
@@ -1009,7 +1095,7 @@ function qualificationBadge(g, team, rank){
   if(rank <= 2){
     // 6分已足够锁定至少小组前三，从而确定晋级；小组赛全部踢完后，前2也确定晋级。
     const groupDone = isGroupDone(g);
-    if(groupDone) return { cls:'locked', text:'确定' };
+    if(groupDone) return { cls:'locked', text:'已晋级' };
     if(ptsOf(g, team) >= 6) return { cls:'clinched', text:'已晋级' };
     return { cls:'pred', text:'模拟' };
   }
@@ -1325,6 +1411,18 @@ function scrollToCurrentRule(){
 
 function getWinnerOf(matchId){ return winners[matchId] || null; }
 
+function apiMatchTeamsOf(matchId){
+  return apiKnockoutTeams[matchId] || null;
+}
+
+function matchTeamA(matchId, fallback){
+  return apiMatchTeamsOf(matchId)?.home || fallback || null;
+}
+
+function matchTeamB(matchId, fallback){
+  return apiMatchTeamsOf(matchId)?.away || fallback || null;
+}
+
 function renderBracket(){
   thirdAssignmentMap = assignThirds();
   const area = document.getElementById('bracketArea');
@@ -1337,20 +1435,20 @@ function renderBracket(){
 
   // 计算每个象限的 R16 / QF 胜者
   function quadR16Matches(q){
-    const m1 = buildMatch(q.r32[0].id, slotTeamName(q.r32[0].a), slotTeamName(q.r32[0].b), slotLabel(q.r32[0].a), slotLabel(q.r32[0].b), slotStatus(q.r32[0].a), slotStatus(q.r32[0].b));
-    const m2 = buildMatch(q.r32[1].id, slotTeamName(q.r32[1].a), slotTeamName(q.r32[1].b), slotLabel(q.r32[1].a), slotLabel(q.r32[1].b), slotStatus(q.r32[1].a), slotStatus(q.r32[1].b));
-    const m3 = buildMatch(q.r32[2].id, slotTeamName(q.r32[2].a), slotTeamName(q.r32[2].b), slotLabel(q.r32[2].a), slotLabel(q.r32[2].b), slotStatus(q.r32[2].a), slotStatus(q.r32[2].b));
-    const m4 = buildMatch(q.r32[3].id, slotTeamName(q.r32[3].a), slotTeamName(q.r32[3].b), slotLabel(q.r32[3].a), slotLabel(q.r32[3].b), slotStatus(q.r32[3].a), slotStatus(q.r32[3].b));
+    const m1 = buildMatch(q.r32[0].id, matchTeamA(q.r32[0].id, slotTeamName(q.r32[0].a)), matchTeamB(q.r32[0].id, slotTeamName(q.r32[0].b)), slotLabel(q.r32[0].a), slotLabel(q.r32[0].b), slotStatus(q.r32[0].a), slotStatus(q.r32[0].b));
+    const m2 = buildMatch(q.r32[1].id, matchTeamA(q.r32[1].id, slotTeamName(q.r32[1].a)), matchTeamB(q.r32[1].id, slotTeamName(q.r32[1].b)), slotLabel(q.r32[1].a), slotLabel(q.r32[1].b), slotStatus(q.r32[1].a), slotStatus(q.r32[1].b));
+    const m3 = buildMatch(q.r32[2].id, matchTeamA(q.r32[2].id, slotTeamName(q.r32[2].a)), matchTeamB(q.r32[2].id, slotTeamName(q.r32[2].b)), slotLabel(q.r32[2].a), slotLabel(q.r32[2].b), slotStatus(q.r32[2].a), slotStatus(q.r32[2].b));
+    const m4 = buildMatch(q.r32[3].id, matchTeamA(q.r32[3].id, slotTeamName(q.r32[3].a)), matchTeamB(q.r32[3].id, slotTeamName(q.r32[3].b)), slotLabel(q.r32[3].a), slotLabel(q.r32[3].b), slotStatus(q.r32[3].a), slotStatus(q.r32[3].b));
     return [m1,m2,m3,m4];
   }
   function quadR16Winners(q){
     return [
-      buildMatch(q.r16ids[0], getWinnerOf(q.r32[0].id), getWinnerOf(q.r32[1].id)),
-      buildMatch(q.r16ids[1], getWinnerOf(q.r32[2].id), getWinnerOf(q.r32[3].id)),
+      buildMatch(q.r16ids[0], matchTeamA(q.r16ids[0], getWinnerOf(q.r32[0].id)), matchTeamB(q.r16ids[0], getWinnerOf(q.r32[1].id))),
+      buildMatch(q.r16ids[1], matchTeamA(q.r16ids[1], getWinnerOf(q.r32[2].id)), matchTeamB(q.r16ids[1], getWinnerOf(q.r32[3].id))),
     ];
   }
   function quadQF(q){
-    return buildMatch(q.qfid, getWinnerOf(q.r16ids[0]), getWinnerOf(q.r16ids[1]));
+    return buildMatch(q.qfid, matchTeamA(q.qfid, getWinnerOf(q.r16ids[0])), matchTeamB(q.qfid, getWinnerOf(q.r16ids[1])));
   }
 
   const [Q1,Q2,Q3,Q4] = quadrants;
@@ -1366,9 +1464,9 @@ function renderBracket(){
   const rightR32 = makeCol([...quadR16Matches(Q3), ...quadR16Matches(Q4)], true);
 
   // 中间：半决赛；决赛单独展示在下方区域
-  const sfA = buildMatch(sfids[0], getWinnerOf(Q1.qfid), getWinnerOf(Q2.qfid));
-  const sfB = buildMatch(sfids[1], getWinnerOf(Q3.qfid), getWinnerOf(Q4.qfid));
-  const finalMatch = buildMatch(finalId, getWinnerOf(sfids[0]), getWinnerOf(sfids[1]));
+  const sfA = buildMatch(sfids[0], matchTeamA(sfids[0], getWinnerOf(Q1.qfid)), matchTeamB(sfids[0], getWinnerOf(Q2.qfid)));
+  const sfB = buildMatch(sfids[1], matchTeamA(sfids[1], getWinnerOf(Q3.qfid)), matchTeamB(sfids[1], getWinnerOf(Q4.qfid)));
+  const finalMatch = buildMatch(finalId, matchTeamA(finalId, getWinnerOf(sfids[0])), matchTeamB(finalId, getWinnerOf(sfids[1])));
   finalMatch.classList.add('final-showdown');
 
   const centerCol = document.createElement('div');
@@ -1405,8 +1503,8 @@ function renderBracket(){
     makeMobileRound([...quadR16Winners(Q1), ...quadR16Winners(Q2), ...quadR16Winners(Q3), ...quadR16Winners(Q4)]),
     makeMobileRound([quadQF(Q1), quadQF(Q2), quadQF(Q3), quadQF(Q4)]),
     makeMobileRound([
-      buildMatch(sfids[0], getWinnerOf(Q1.qfid), getWinnerOf(Q2.qfid)),
-      buildMatch(sfids[1], getWinnerOf(Q3.qfid), getWinnerOf(Q4.qfid))
+      buildMatch(sfids[0], matchTeamA(sfids[0], getWinnerOf(Q1.qfid)), matchTeamB(sfids[0], getWinnerOf(Q2.qfid))),
+      buildMatch(sfids[1], matchTeamA(sfids[1], getWinnerOf(Q3.qfid)), matchTeamB(sfids[1], getWinnerOf(Q4.qfid)))
     ])
   ].forEach(section=>mobileRounds.appendChild(section));
   area.appendChild(mobileRounds);
@@ -1643,7 +1741,7 @@ function updateProgress(){
 }
 
 function resetAll(){
-  winners = {};
+  winners = { ...apiKnockoutWinners };
   Object.keys(groups).forEach(g=>{
     const sorted = [...groups[g]].sort((a,b)=> compareTeamsInGroup(g,a,b));
     groupPicks[g] = { first: sorted[0], second: sorted[1] };
@@ -1668,8 +1766,10 @@ document.addEventListener('keydown', e=>{
 /* init */
 async function init(){
   try{
-    const apiGroups = await getGroups("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhM2NmMjA1ZmU1YWQxNjA0OGM2NDg5NSIsImlhdCI6MTc4MjM3OTAxNCwiZXhwIjoxNzg5NjM2NjE0fQ.rld-IK8HsTehqLRsA1yegiFO0Bx7-36i_MWA0vfSlII");
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhM2NmMjA1ZmU1YWQxNjA0OGM2NDg5NSIsImlhdCI6MTc4MjM3OTAxNCwiZXhwIjoxNzg5NjM2NjE0fQ.rld-IK8HsTehqLRsA1yegiFO0Bx7-36i_MWA0vfSlII";
+    const [apiGroups, apiGames] = await Promise.all([getGroups(token), getGames(token)]);
     applyGroupApiData(apiGroups);
+    applyGamesApiData(apiGames);
     await loadThirdPlaceRules();
     preloadTeamFlags();
     initGroupPicks();
