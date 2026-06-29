@@ -955,6 +955,29 @@ function inferApiWinnersFromNextRounds(){
   });
 }
 
+function winnerMatchIdFromLabel(label){
+  const match = String(label || '').match(/Winner Match\s+(\d+)/i);
+  return match ? `M${match[1]}` : null;
+}
+
+function syncApiTeamsFromWinnerLabels(apiGames){
+  apiGames
+    .filter(game => game.type && game.type !== 'group')
+    .forEach(game => {
+      const matchId = `M${game.id}`;
+      const homeSourceId = winnerMatchIdFromLabel(game.home_team_label);
+      const awaySourceId = winnerMatchIdFromLabel(game.away_team_label);
+      const homeWinner = homeSourceId ? apiKnockoutWinners[homeSourceId] : null;
+      const awayWinner = awaySourceId ? apiKnockoutWinners[awaySourceId] : null;
+
+      if(!homeWinner && !awayWinner) return;
+      const teams = apiKnockoutTeams[matchId] || { home:'', away:'' };
+      if(homeWinner) teams.home = homeWinner;
+      if(awayWinner) teams.away = awayWinner;
+      apiKnockoutTeams[matchId] = teams;
+    });
+}
+
 function applyGamesApiData(apiGames){
   apiKnockoutTeams = {};
   apiKnockoutWinners = {};
@@ -984,6 +1007,7 @@ function applyGamesApiData(apiGames){
     });
 
   inferApiWinnersFromNextRounds();
+  syncApiTeamsFromWinnerLabels(apiGames);
   winners = { ...apiKnockoutWinners };
 }
 function ptsOf(g, team){
